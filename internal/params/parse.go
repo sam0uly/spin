@@ -36,6 +36,8 @@ func ParseOne(name string, s Spec) (Param, error) {
 		return NewNumber(name, s.Prompt, asInt(s.Default), s.Min, s.Max), nil
 	case TypeSelect:
 		return NewSelect(name, s.Prompt, s.Options, asString(s.Default)), nil
+	case TypeLicense:
+		return NewLicense(name, s.Prompt, s.Options, asString(s.Default)), nil
 	case TypeMultiSelect:
 		return NewMultiSelect(name, s.Prompt, s.Options, asStringSlice(s.Default)), nil
 	case TypeBool:

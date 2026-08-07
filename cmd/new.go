@@ -317,7 +317,7 @@ func coerceParamValue(spec params.Spec, raw string) (any, error) {
 			}
 		}
 		return out, nil
-	case params.TypeSelect:
+	case params.TypeSelect, params.TypeLicense:
 		if len(spec.Options) > 0 && !slices.Contains(spec.Options, raw) {
 			return nil, fmt.Errorf("not in options (want one of %v, got %q)", spec.Options, raw)
 		}

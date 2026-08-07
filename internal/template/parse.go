@@ -5,6 +5,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 
+	"github.com/sam0uly/spin/internal/licenses"
 	"github.com/sam0uly/spin/internal/params"
 )
 
@@ -114,6 +115,12 @@ func specFromMap(m map[string]any) params.Spec {
 				spec.Options = append(spec.Options, s)
 			}
 		}
+	}
+	// A license param with no options gets the built-in set, so
+	// `--param license=MIT` validates against the curated list and
+	// the interactive form has something to offer.
+	if spec.Type == params.TypeLicense && len(spec.Options) == 0 {
+		spec.Options = licenses.Options()
 	}
 	return spec
 }

@@ -84,10 +84,18 @@ func FromAny(v any) Value {
 // silently and produce a broken scaffold.
 func ValidateDefaults(ps []Param) error {
 	for _, p := range ps {
-		if s, ok := p.(*SelectParam); ok {
-			if s.value != "" && !slices.Contains(s.options, s.value) {
-				return fmt.Errorf("%s must be one of %v, got %q", s.name, s.options, s.value)
-			}
+		var s *SelectParam
+		switch x := p.(type) {
+		case *SelectParam:
+			s = x
+		case *LicenseParam:
+			s = x.SelectParam
+		}
+		if s == nil {
+			continue
+		}
+		if s.value != "" && !slices.Contains(s.options, s.value) {
+			return fmt.Errorf("%s must be one of %v, got %q", s.name, s.options, s.value)
 		}
 	}
 	return nil

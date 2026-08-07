@@ -68,6 +68,10 @@ spin new my-project --template .
 - ` + "`_base/`" + `: the file tree rendered into the user's
   project. Files ending in ` + "`.tmpl`" + ` are processed by
   Go text/template; everything else is copied verbatim.
+- ` + "`[params.license]`" + ` with ` + "`type = \"license\"`" + `:
+  the user picks a license at scaffold time and spin writes the
+  project's ` + "`LICENSE`" + ` from the bundled SPDX texts
+  automatically. Pick ` + "`None`" + ` for no license file.
 - ` + "`[[include]]`" + ` rules in spin.toml can gate files or
   directories on param values (e.g. only include ` + "`.github/`" + `
   when a ` + "`ci`" + ` param is true).
@@ -84,6 +88,12 @@ spin new my-project --template .
   ` + "`go mod init`" + `).
 - ` + "`spin new my-app --template . --no-hooks`" + ` skips
   all hooks.
+- Built-in licensing: declare ` + "`[params.license]`" + ` with
+  ` + "`type = \"license\"`" + ` and spin writes ` + "`LICENSE`" + `
+  from the bundled SPDX texts; add a ` + "`copyright_holder`" + `
+  param to ask who owns the copyright. A template that already
+  ships its own ` + "`LICENSE`" + `/` + "`COPYING`" + ` file is never
+  overwritten.
 `
 
 // runInit is the RunE for `spin init`. Creates <dir>/<name>/
@@ -151,8 +161,8 @@ func runInit(cmd *cobra.Command, args []string) error {
 }
 
 // initSpinToml renders the starting manifest for a new template.
-// It includes a couple of example params (project_name, license)
-// and a no-op post step the user can replace, so the file is
+// It includes the built-in licensing params (license + copyright
+// holder) and a no-op post step the user can replace, so the file is
 // immediately renderable end-to-end.
 func initSpinToml(name string) string {
 	var b strings.Builder
@@ -161,11 +171,18 @@ func initSpinToml(name string) string {
 	b.WriteString("type = \"cli\"\n")
 	b.WriteString("language = \"go\"\n\n")
 	b.WriteString("[params]\n\n")
+	b.WriteString("# Built-in licensing: the user picks a license at scaffold time\n")
+	b.WriteString("# and spin writes the project's LICENSE from the bundled SPDX\n")
+	b.WriteString("# texts. Options are filled in automatically; pick \"None\" for\n")
+	b.WriteString("# no LICENSE file.\n")
 	b.WriteString("[params.license]\n")
-	b.WriteString("type = \"select\"\n")
+	b.WriteString("type = \"license\"\n")
 	b.WriteString("prompt = \"License\"\n")
-	b.WriteString("options = [\"MIT\", \"Apache-2.0\", \"BSD-3-Clause\", \"Proprietary\"]\n")
 	b.WriteString("default = \"MIT\"\n\n")
+	b.WriteString("# Optional: ask who owns the copyright, used in the LICENSE line.\n")
+	b.WriteString("[params.copyright_holder]\n")
+	b.WriteString("type = \"text\"\n")
+	b.WriteString("prompt = \"Copyright holder\"\n\n")
 	b.WriteString("# Optional: run commands before files are rendered.\n")
 	b.WriteString("# [[pre]]\n")
 	b.WriteString("# run = \"mkdir -p cmd\"\n\n")

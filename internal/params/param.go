@@ -18,6 +18,7 @@ const (
 	TypeBool        Type = "bool"
 	TypePath        Type = "path"
 	TypeSecret      Type = "secret"
+	TypeLicense     Type = "license"
 )
 
 // Value is the resolved value of a Param after the form has run.
@@ -67,7 +68,7 @@ type ErrUnknownType struct {
 }
 
 func (e ErrUnknownType) Error() string {
-	return fmt.Sprintf("param %q: unknown type %q (want text, textarea, number, select, multiselect, bool, path, secret)", e.Name, e.Type)
+	return fmt.Sprintf("param %q: unknown type %q (want text, textarea, number, select, multiselect, bool, path, secret, license)", e.Name, e.Type)
 }
 
 func orPrompt(name, p string) string {

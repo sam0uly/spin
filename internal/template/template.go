@@ -8,7 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+	"time"
 
+	"github.com/sam0uly/spin/internal/licenses"
 	"github.com/sam0uly/spin/internal/params"
 )
 
@@ -118,7 +120,58 @@ func (t *Template) Render(values map[string]any) (map[string][]byte, error) {
 		out[candidate] = rendered
 		return nil
 	})
-	return out, err
+	if err != nil {
+		return nil, err
+	}
+	if err := t.appendLicense(out, values); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// licenseFileNames are the output names that count as "the template
+// already ships a license file". A generated LICENSE never overwrites
+// any of them.
+var licenseFileNames = []string{"LICENSE", "LICENSE.txt", "LICENSE.md", "COPYING", "COPYING.txt"}
+
+// appendLicense adds a LICENSE file to the rendered output when the
+// template opted into built-in licensing. The resolved `license` value
+// (from a `type = "license"` param) must be a known built-in license;
+// empty, "None", "Proprietary", and unknown values never produce a
+// file. An existing license-named file in the output is never
+// overwritten. The copyright holder comes from the optional
+// `copyright_holder` value; when absent, the SPDX token is left in
+// place so the file never claims an ownership it was not given. The
+// year is always the current year.
+func (t *Template) appendLicense(out map[string][]byte, values map[string]any) error {
+	id, _ := values["license"].(string)
+	if !licenses.IsKnown(id) {
+		return nil
+	}
+	if hasLicenseFile(out) {
+		return nil
+	}
+	holder, _ := values["copyright_holder"].(string)
+	text, err := licenses.Render(id, holder, time.Now().Year())
+	if err != nil {
+		return err
+	}
+	out["LICENSE"] = []byte(text)
+	return nil
+}
+
+// hasLicenseFile reports whether the output already contains a
+// license-named file (case-insensitive).
+func hasLicenseFile(out map[string][]byte) bool {
+	for name := range out {
+		lower := strings.ToLower(name)
+		for _, want := range licenseFileNames {
+			if lower == strings.ToLower(want) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // shouldInclude evaluates the [[include]] rules for a path. If no

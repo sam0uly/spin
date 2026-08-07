@@ -137,6 +137,15 @@ func TestInit_FixtureIsRenderable(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(outDir, "spin.toml")); !os.IsNotExist(err) {
 		t.Errorf("rendered project should not contain spin.toml (TPL-16); stat err=%v", err)
 	}
+	// Built-in licensing: the fixture's `type = "license"` param with
+	// --param license=MIT must produce a LICENSE file with the year.
+	lic, err := os.ReadFile(filepath.Join(outDir, "LICENSE"))
+	if err != nil {
+		t.Fatalf("expected generated LICENSE: %v", err)
+	}
+	if !bytes.Contains(lic, []byte("MIT License")) {
+		t.Errorf("LICENSE should be the MIT text; got:\n%s", lic)
+	}
 }
 
 // TestInit_HelpText verifies the help mentions --dir and a

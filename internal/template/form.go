@@ -102,7 +102,7 @@ func UnwrapValue(v params.Value) any {
 			return v.List
 		case params.TypePath:
 			return v.Path
-		case params.TypeSecret, params.TypeText, params.TypeTextarea, params.TypeSelect:
+		case params.TypeSecret, params.TypeText, params.TypeTextarea, params.TypeSelect, params.TypeLicense:
 			return v.String
 		}
 	}

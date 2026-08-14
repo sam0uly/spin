@@ -3,6 +3,9 @@ package template
 import (
 	"strings"
 	"testing"
+
+	"github.com/sam0uly/spin/internal/licenses"
+	"github.com/sam0uly/spin/internal/params"
 )
 
 // TestParseTOML_AllFields verifies the full spin.toml schema decodes:
@@ -101,6 +104,52 @@ run = "git init"
 	}
 	if ed.Default != "2021" {
 		t.Errorf("edition default = %v, want 2021", ed.Default)
+	}
+}
+
+// TestParseTOML_LicenseParamOptionsFilled verifies a `type =
+// "license"` param with no options gets the built-in SPDX set plus
+// "None", so --param values validate and the form has options.
+func TestParseTOML_LicenseParamOptionsFilled(t *testing.T) {
+	input := `name = "t"
+
+[params.license]
+type = "license"
+prompt = "License"
+`
+	st, err := ParseSpinTomlBytes([]byte(input))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	spec, ok := st.Params["license"]
+	if !ok {
+		t.Fatal("params.license missing")
+	}
+	if spec.Type != params.TypeLicense {
+		t.Errorf("type = %q, want %q", spec.Type, params.TypeLicense)
+	}
+	want := licenses.Options()
+	if len(spec.Options) != len(want) {
+		t.Fatalf("options not filled: got %d, want %d (%v)", len(spec.Options), len(want), spec.Options)
+	}
+	for i := range want {
+		if spec.Options[i] != want[i] {
+			t.Errorf("options[%d] = %q, want %q", i, spec.Options[i], want[i])
+		}
+	}
+	// Explicit options are kept as-is.
+	input2 := `name = "t"
+
+[params.license]
+type = "license"
+options = ["MIT"]
+`
+	st2, err := ParseSpinTomlBytes([]byte(input2))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if got := st2.Params["license"].Options; len(got) != 1 || got[0] != "MIT" {
+		t.Errorf("explicit options must be kept, got %v", got)
 	}
 }
 

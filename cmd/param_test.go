@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/sam0uly/spin/internal/licenses"
 	"github.com/sam0uly/spin/internal/params"
 	"github.com/sam0uly/spin/internal/template"
 )
@@ -188,6 +189,25 @@ func TestCoerceParamValue_Select(t *testing.T) {
 	openSpec := params.Spec{Type: params.TypeSelect}
 	if _, err := coerceParamValue(openSpec, "anything"); err != nil {
 		t.Errorf("open select should accept anything: %v", err)
+	}
+}
+
+func TestCoerceParamValue_License(t *testing.T) {
+	spec := params.Spec{Type: params.TypeLicense, Options: []string{"MIT", "Apache-2.0", "None"}}
+	got, err := coerceParamValue(spec, "MIT")
+	if err != nil {
+		t.Fatalf("MIT should be a valid license: %v", err)
+	}
+	if got != "MIT" {
+		t.Errorf("got %v, want %q", got, "MIT")
+	}
+	if _, err := coerceParamValue(spec, "GPL-3.0-only"); err == nil {
+		t.Error("out-of-options license should be rejected")
+	}
+	// Auto-filled options (specFromMap) make any built-in license valid.
+	filled := params.Spec{Type: params.TypeLicense, Options: licenses.Options()}
+	if _, err := coerceParamValue(filled, "CC0-1.0"); err != nil {
+		t.Errorf("built-in license should be accepted: %v", err)
 	}
 }
 

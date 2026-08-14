@@ -289,7 +289,7 @@ func errorView(errs []error) string {
 func paramDisplay(p params.Param) string {
 	v := p.Value()
 	switch v.Kind {
-	case params.TypeText, params.TypeTextarea, params.TypeSelect, params.TypeSecret:
+	case params.TypeText, params.TypeTextarea, params.TypeSelect, params.TypeSecret, params.TypeLicense:
 		return v.String
 	case params.TypeNumber:
 		return fmt.Sprintf("%d", v.Int)

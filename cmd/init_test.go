@@ -146,6 +146,14 @@ func TestInit_FixtureIsRenderable(t *testing.T) {
 	if !bytes.Contains(lic, []byte("MIT License")) {
 		t.Errorf("LICENSE should be the MIT text; got:\n%s", lic)
 	}
+	// Verify year and holder substitution from the built-in license.
+	// The fixture's spin.toml uses type = "license" with default = "MIT"
+	// and no copyright_holder param, so the token should remain.
+	// With --param license=MIT, the year is always current; the holder
+	// token is left in place since no copyright_holder param is provided.
+	if !bytes.Contains(lic, []byte("202")) {
+		t.Errorf("LICENSE should contain a year (e.g. 202x); got:\n%s", lic)
+	}
 }
 
 // TestInit_HelpText verifies the help mentions --dir and a

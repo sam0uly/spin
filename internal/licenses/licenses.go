@@ -90,12 +90,16 @@ func Render(id, holder string, year int) (string, error) {
 		yy := fmt.Sprintf("%d", year)
 		s = strings.ReplaceAll(s, "<year>", yy)
 		s = strings.ReplaceAll(s, "[yyyy]", yy)
+		s = strings.ReplaceAll(s, "YEAR", yy)
 	}
 	if holder != "" {
 		s = strings.ReplaceAll(s, "<copyright holders>", holder)
 		s = strings.ReplaceAll(s, "<owner>", holder)
 		s = strings.ReplaceAll(s, "[name of copyright owner]", holder)
 		s = strings.ReplaceAll(s, "<name of author>", holder)
+		s = strings.ReplaceAll(s, "AUTHOR EMAIL", holder)
+		s = strings.ReplaceAll(s, "yyyy name of author", holder)
+		s = strings.ReplaceAll(s, "year name of author", holder)
 	}
 	return s, nil
 }

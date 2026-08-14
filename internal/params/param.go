@@ -68,7 +68,7 @@ type ErrUnknownType struct {
 }
 
 func (e ErrUnknownType) Error() string {
-	return fmt.Sprintf("param %q: unknown type %q (want text, textarea, number, select, multiselect, bool, path, secret, license)", e.Name, e.Type)
+	return fmt.Sprintf("%q: unknown type %q (supported: text, textarea, number, select, multiselect, bool, path, secret, license)", e.Name, e.Type)
 }
 
 func orPrompt(name, p string) string {

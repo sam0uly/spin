@@ -158,3 +158,19 @@ func TestRender_UnknownID(t *testing.T) {
 		t.Errorf("error should name the id; got: %v", err)
 	}
 }
+
+func TestRender_0BSD(t *testing.T) {
+	text, err := Render("0BSD", "Jane Doe", 2026)
+	if err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+	if strings.Contains(text, "YEAR") {
+		t.Errorf("YEAR placeholder must be substituted; got:\n%s", text)
+	}
+	if strings.Contains(text, "AUTHOR EMAIL") {
+		t.Errorf("AUTHOR EMAIL placeholder must be substituted; got:\n%s", text)
+	}
+	if !strings.Contains(text, "2026") || !strings.Contains(text, "Jane Doe") {
+		t.Errorf("expected substituted year and holder; got:\n%s", text)
+	}
+}

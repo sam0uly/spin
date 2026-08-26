@@ -372,16 +372,18 @@ func (c *Client) Purge(ctx context.Context, name string) error {
 	if err != nil {
 		return err
 	}
-	var match *Pinned
-	out := all[:0]
-	for i, x := range all {
+	var match Pinned
+	found := false
+	out := make([]Pinned, 0, len(all))
+	for _, x := range all {
 		if x.Name == name {
-			match = &all[i]
+			match = x
+			found = true
 			continue
 		}
 		out = append(out, x)
 	}
-	if match == nil {
+	if !found {
 		return fmt.Errorf("no pinned template named %q", name)
 	}
 	if match.LocalPath != "" {

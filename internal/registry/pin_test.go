@@ -170,3 +170,42 @@ func TestPurge_NotFound(t *testing.T) {
 		t.Fatal("Purge of unknown name should error")
 	}
 }
+
+// TestPurge_KeepsSiblingCache verifies purging the first of two pins
+// deletes the right cache, a regression guard for the slice-aliasing
+// bug that let Purge delete a sibling's LocalPath.
+func TestPurge_KeepsSiblingCache(t *testing.T) {
+	client := newPinTestClient(t)
+	ctx := context.Background()
+
+	firstPath := filepath.Join(client.CacheDir, "templates", "first")
+	secondPath := filepath.Join(client.CacheDir, "templates", "second")
+	for _, dir := range []string{firstPath, secondPath} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := client.Pin(ctx, Pinned{Name: "first", Source: "/tmp/a", LocalPath: firstPath}); err != nil {
+		t.Fatal(err)
+	}
+	if err := client.Pin(ctx, Pinned{Name: "second", Source: "/tmp/b", LocalPath: secondPath}); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := client.Purge(ctx, "first"); err != nil {
+		t.Fatalf("Purge: %v", err)
+	}
+	if _, err := os.Stat(firstPath); !os.IsNotExist(err) {
+		t.Error("purged pin cache should be gone")
+	}
+	if _, err := os.Stat(secondPath); err != nil {
+		t.Errorf("sibling pin cache must survive: %v", err)
+	}
+	all, err := client.ListAllPinned(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(all) != 1 || all[0].Name != "second" {
+		t.Errorf("sibling record must survive purge; got %+v", all)
+	}
+}

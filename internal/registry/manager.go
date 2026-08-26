@@ -461,20 +461,22 @@ func (m Manager) Remove(ctx context.Context, alias string, pinnedTemplates []Pin
 	if err != nil {
 		return err
 	}
-	var match *Registry
-	out := cfg.Registries[:0]
-	for i, r := range cfg.Registries {
+	var match Registry
+	found := false
+	out := make([]Registry, 0, len(cfg.Registries))
+	for _, r := range cfg.Registries {
 		if r.Alias == alias {
-			match = &cfg.Registries[i]
+			match = r
+			found = true
 			continue
 		}
 		out = append(out, r)
 	}
-	if match == nil {
+	if !found {
 		return fmt.Errorf("%w: %q", ErrRegistryMissing, alias)
 	}
 
-	dependents := m.findDependentPins(*match, pinnedTemplates)
+	dependents := m.findDependentPins(match, pinnedTemplates)
 	if len(dependents) > 0 && !purgePinned {
 		names := make([]string, len(dependents))
 		for i, p := range dependents {

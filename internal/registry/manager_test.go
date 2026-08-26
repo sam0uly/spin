@@ -215,6 +215,35 @@ func TestManager_RemoveDeletesCacheAndEntry(t *testing.T) {
 	}
 }
 
+func TestManager_RemoveKeepsSiblingRegistryCache(t *testing.T) {
+	mgr := newTestManager(t)
+	srcA := t.TempDir()
+	writeRegistryFixture(t, srcA)
+	srcB := t.TempDir()
+	writeRegistryFixture(t, srcB)
+	first, err := mgr.Add(context.Background(), "first", srcA, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := mgr.Add(context.Background(), "second", srcB, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mgr.Remove(context.Background(), "first", nil, false); err != nil {
+		t.Fatalf("Remove: %v", err)
+	}
+	if _, err := os.Stat(first.Path); !os.IsNotExist(err) {
+		t.Errorf("removed registry cache should be gone; stat err=%v", err)
+	}
+	if _, err := os.Stat(second.Path); err != nil {
+		t.Errorf("sibling registry cache must survive: %v", err)
+	}
+	if _, ok := mgr.Get(context.Background(), "second"); !ok {
+		t.Error("sibling alias should remain registered")
+	}
+}
+
 func TestManager_RemoveUnknownAliasIsError(t *testing.T) {
 	mgr := newTestManager(t)
 	err := mgr.Remove(context.Background(), "ghost", nil, false)

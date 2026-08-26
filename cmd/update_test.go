@@ -34,6 +34,7 @@ func makeFixtureLocalSource(t *testing.T) string {
 // new file. This is the happy path of `spin update` for a
 // local-path pin.
 func TestRefresh_LocalPath(t *testing.T) {
+	isolateConfig(t)
 	src := makeFixtureLocalSource(t)
 	dst := t.TempDir()
 	dest := filepath.Join(dst, "fixture")
@@ -84,6 +85,7 @@ func TestRefresh_LocalPath(t *testing.T) {
 // pin has no LocalPath (e.g. legacy pin files). The error
 // mentions `spin add` so the user knows the fix.
 func TestRefresh_NoLocalPath(t *testing.T) {
+	isolateConfig(t)
 	c := registry.New()
 	_, err := c.Refresh(context.Background(), registry.Pinned{Name: "x", Source: "/foo"})
 	if err == nil {
@@ -107,6 +109,7 @@ func TestRefresh_NoLocalPath(t *testing.T) {
 // the "no LocalPath" branch (covered by TestRefresh_NoLocalPath)
 // here for completeness.
 func TestRefresh_MissingOnDisk(t *testing.T) {
+	isolateConfig(t)
 	c := registry.New()
 	// For local-path sources, Refresh happily recreates LocalPath
 	// from Source. So we don't test a failure here; we test the
@@ -136,6 +139,7 @@ func TestRefresh_MissingOnDisk(t *testing.T) {
 // fail on the os.Stat(source) check; refreshOne should roll the
 // .bak back into place.
 func TestRefreshOne_RollsBackOnFailure(t *testing.T) {
+	isolateConfig(t)
 	src := makeFixtureLocalSource(t)
 	cache := t.TempDir()
 	dest := filepath.Join(cache, "fixture")
@@ -189,6 +193,7 @@ func TestRefreshOne_RollsBackOnFailure(t *testing.T) {
 // refresh leaves the cache with the new content and the .bak dir
 // is gone.
 func TestRefreshOne_SuccessClearsBackup(t *testing.T) {
+	isolateConfig(t)
 	src := makeFixtureLocalSource(t)
 	cache := t.TempDir()
 	dest := filepath.Join(cache, "fixture")

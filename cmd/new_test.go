@@ -104,6 +104,7 @@ func TestNew_SinglePositionalTemplateSpec(t *testing.T) {
 // would trigger the huh form.
 func runSpinClosedStdin(t *testing.T, args ...string) ([]byte, int) {
 	t.Helper()
+	isolateConfig(t)
 	ensureBin(t)
 	run := exec.Command(binPath, args...)
 	run.Stdin = strings.NewReader("")

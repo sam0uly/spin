@@ -176,6 +176,7 @@ func TestInit_HelpText(t *testing.T) {
 // destination from the test process's CWD.
 func runSpinWithDir(t *testing.T, dir string, args ...string) ([]byte, int) {
 	t.Helper()
+	isolateConfig(t)
 	ensureBin(t)
 	run := exec.Command(binPath, args...)
 	run.Dir = dir

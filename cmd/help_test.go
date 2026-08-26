@@ -159,6 +159,19 @@ func TestFangExecuteNoPanic(t *testing.T) {
 	}
 }
 
+// isolateConfig points XDG_CONFIG_HOME at a throwaway dir so any
+// pin/registry writes from this test land in temp space instead of
+// the developer's real ~/.config/spin. Skipped when the test
+// already set XDG_CONFIG_HOME (e.g. via withEmptyPinned to seed a
+// pinned.json it expects the binary to read).
+func isolateConfig(t *testing.T) {
+	t.Helper()
+	if os.Getenv("XDG_CONFIG_HOME") != "" {
+		return
+	}
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+}
+
 func ensureBin(t testing.TB) {
 	binOnce.Do(func() {
 		binPath = filepath.Join(os.TempDir(), fmt.Sprintf("spin-test-%d", os.Getpid()))
@@ -178,6 +191,7 @@ func ensureBin(t testing.TB) {
 // the given args. Returns combined stdout+stderr.
 func runSpin(t *testing.T, args ...string) []byte {
 	t.Helper()
+	isolateConfig(t)
 	ensureBin(t)
 	run := exec.Command(binPath, args...)
 	out, err := run.CombinedOutput()
@@ -194,6 +208,7 @@ func runSpin(t *testing.T, args ...string) []byte {
 // the exit code. Used for tests that assert on non-zero exits.
 func runSpinExit(t *testing.T, args ...string) ([]byte, int) {
 	t.Helper()
+	isolateConfig(t)
 	ensureBin(t)
 	run := exec.Command(binPath, args...)
 	out, err := run.CombinedOutput()

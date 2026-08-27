@@ -24,6 +24,7 @@ Single static binary. Needs git on $PATH.
 ## Getting started
 
 The documentation: [Spin docs](https://spin.samouly.fun)
+
 Go pkg: https://pkg.go.dev/github.com/sam0uly/spin (just have the readme so its not for learning)
 
 ## Commands

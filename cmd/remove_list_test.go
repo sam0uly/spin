@@ -11,9 +11,7 @@ import (
 	"github.com/sam0uly/spin/internal/registry"
 )
 
-// withEmptyPinned sets XDG_CONFIG_HOME to a temp dir for the
-// duration of the test, so the registry client reads/writes a
-// throwaway pinned.json. Returns the cache dir it picked.
+// withEmptyPinned sets XDG_CONFIG_HOME to a temp dir for the duration of the test, so the registry client.
 func withEmptyPinned(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -57,9 +55,7 @@ func readPinned(t *testing.T, cache string) []registry.Pinned {
 	return out
 }
 
-// TestRemove_UnknownNameIsError verifies `spin remove foo` errors
-// when "foo" isn't pinned. A silent no-op would mask typos and
-// leave the user thinking they cleaned up.
+// TestRemove_UnknownNameIsError verifies `spin remove foo` errors when "foo" isn't pinned.
 func TestRemove_UnknownNameIsError(t *testing.T) {
 	withEmptyPinned(t)
 	out, exitCode := runSpinExit(t, "remove", "nonexistent")
@@ -74,9 +70,7 @@ func TestRemove_UnknownNameIsError(t *testing.T) {
 	}
 }
 
-// TestRemove_MarksRemoved verifies the default `spin remove`
-// soft-deletes the pin: the record stays in pinned.json with
-// Removed=true, so a follow-up --purge still finds it.
+// TestRemove_MarksRemoved verifies the default `spin remove` soft-deletes the pin: the record stays in pinned.
 func TestRemove_MarksRemoved(t *testing.T) {
 	cache := withEmptyPinned(t)
 	seedPinned(t, cache,
@@ -103,10 +97,7 @@ func TestRemove_MarksRemoved(t *testing.T) {
 	}
 }
 
-// TestRemove_PurgeDeletesCache is the regression test for the
-// `--purge` bug: removing a pin and then purging it in one flow
-// must actually delete the on-disk cache. The fix introduces a
-// Removed state so the second call still finds the pin.
+// TestRemove_PurgeDeletesCache is the regression test for the `--purge` bug: removing a pin and then purging it.
 func TestRemove_PurgeDeletesCache(t *testing.T) {
 	cache := withEmptyPinned(t)
 	pinDir := filepath.Join(t.TempDir(), "toremove")
@@ -189,9 +180,7 @@ func TestList_JSONOutput(t *testing.T) {
 	}
 }
 
-// TestList_JSONOutputEmpty verifies the empty-list JSON output is
-// a valid empty array, not an error or "no pinned" text. The
-// jq/caller contract is "always parseable as []type pinnedRow".
+// TestList_JSONOutputEmpty verifies the empty-list JSON output is a valid empty array, not an error or "no.
 func TestList_JSONOutputEmpty(t *testing.T) {
 	withEmptyPinned(t)
 	out := runSpin(t, "list", "--json")
@@ -201,9 +190,7 @@ func TestList_JSONOutputEmpty(t *testing.T) {
 	}
 }
 
-// TestList_DefaultIsTable verifies the human-readable path still
-// works: the table contains the pin's name and version, and
-// emits no JSON braces.
+// TestList_DefaultIsTable verifies the default table view shows each pin's name and version.
 func TestList_DefaultIsTable(t *testing.T) {
 	cache := withEmptyPinned(t)
 	seedPinned(t, cache, registry.Pinned{
@@ -221,9 +208,7 @@ func TestList_DefaultIsTable(t *testing.T) {
 	}
 }
 
-// TestList_HidesRemovedByDefault verifies soft-deleted pins do
-// not appear in the default `spin list` view, so a stale pin
-// doesn't pollute normal usage.
+// TestList_HidesRemovedByDefault verifies soft-deleted pins stay hidden from the default listing.
 func TestList_HidesRemovedByDefault(t *testing.T) {
 	cache := withEmptyPinned(t)
 	seedPinned(t, cache,
@@ -239,9 +224,7 @@ func TestList_HidesRemovedByDefault(t *testing.T) {
 	}
 }
 
-// TestList_AllShowsRemoved verifies `spin list --all` surfaces
-// soft-deleted pins with the "(removed)" marker, so the user can
-// find a row they want to --purge.
+// TestList_AllShowsRemoved verifies `spin list --all` surfaces soft-deleted pins with the "(removed)" marker, so.
 func TestList_AllShowsRemoved(t *testing.T) {
 	cache := withEmptyPinned(t)
 	seedPinned(t, cache,
@@ -279,11 +262,7 @@ func TestList_AllShowsRemoved(t *testing.T) {
 	}
 }
 
-// pinFixture creates a real `spin init go-cli` template in a fresh
-// dir and pins it via `spin add`. Returns the pin's LocalPath so
-// the caller can assert on its on-disk presence later. The test
-// process's XDG_CONFIG_HOME must point at an isolated tempdir
-// (call withEmptyPinned first).
+// pinFixture creates a real `spin init go-cli` template in a fresh dir and pins it via `spin add`.
 func pinFixture(t *testing.T, name string) string {
 	t.Helper()
 	tplParent := t.TempDir()
@@ -309,11 +288,7 @@ func pinFixture(t *testing.T, name string) string {
 	return cacheRoot
 }
 
-// TestRemove_FixtureKeepsCache verifies `spin remove <name>` on a
-// real pinned fixture marks the entry removed but keeps the
-// on-disk cache. The user can still scaffold from the cache via
-// the on-disk path even after the pin is gone from the default
-// list.
+// TestRemove_FixtureKeepsCache verifies `spin remove <name>` on a real pinned fixture marks the entry removed but.
 func TestRemove_FixtureKeepsCache(t *testing.T) {
 	cache := withEmptyPinned(t)
 	pinDir := pinFixture(t, "go-cli")
@@ -362,11 +337,7 @@ func TestRemove_FixtureKeepsCache(t *testing.T) {
 	}
 }
 
-// TestRemove_FixturePurgeClearsEverything is the end-to-end
-// regression test: pin a real fixture, remove it (cache kept),
-// then purge it (cache deleted + entry dropped). The second call
-// is the one the user reported was a no-op before the soft-delete
-// state was added.
+// TestRemove_FixturePurgeClearsEverything is the end-to-end regression test: pin a real fixture, remove it (cache.
 func TestRemove_FixturePurgeClearsEverything(t *testing.T) {
 	cache := withEmptyPinned(t)
 	pinDir := pinFixture(t, "go-cli")

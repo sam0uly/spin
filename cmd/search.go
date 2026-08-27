@@ -79,7 +79,6 @@ func pinnedSearchEntries(ctx *cobra.Command, client *registry.Client, query stri
 				se.Language = st.Language
 			}
 		}
-		// Filter by query.
 		if query != "" {
 			if !strings.Contains(strings.ToLower(se.ID), q) &&
 				!strings.Contains(strings.ToLower(se.Name), q) &&
@@ -107,8 +106,6 @@ func runSearch(cmd *cobra.Command, args []string) error {
 	query := args[0]
 	mgr := registry.NewManager()
 
-	// Bootstrap the official registry on first run so search is
-	// useful without manual setup.
 	maybeBootstrapOfficial(cmd.Context(), mgr)
 
 	idx, _, err := mgr.Build(cmd.Context())
@@ -117,6 +114,7 @@ func runSearch(cmd *cobra.Command, args []string) error {
 	}
 	results := idx.Search(query, searchLimit)
 
+	// Merge pinned templates into results, deduplicating by source.
 	// Merge pinned templates into results, deduplicating by source.
 	client := registry.New()
 	for _, pe := range pinnedSearchEntries(cmd, client, query) {

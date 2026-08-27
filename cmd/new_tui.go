@@ -72,11 +72,9 @@ func newNewTUIModel(tpl *template.Template, values map[string]any) (newTUIModel,
 		return m, err
 	}
 	params.SetDefaults(ps, values)
-	// Seed builtins (name, project_name) and any other supplied values
-	// onto params whose name matches, so the form opens with them
-	// pre-filled -- matching the non-TTY ResolveForm behaviour. Guard
-	// against empty strings: an empty value must never clobber a
-	// param's own default.
+	// Seed supplied values onto matching params so the form opens
+	// pre-filled, like the non-TTY path. An empty string must never
+	// clobber a param's own default.
 	for _, p := range ps {
 		if v, ok := values[p.Name()]; ok {
 			if s, ok := v.(string); ok && s == "" {
@@ -138,9 +136,9 @@ func (m newTUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m.updateForm(msg)
 }
 
-// updateForm is the Update loop for the param form step.
+// updateForm runs the Update loop for the param form step. Ctrl+arrow
+// scrolls the live preview.
 func (m newTUIModel) updateForm(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// Ctrl+arrows scroll the preview viewport.
 	if key, ok := msg.(tea.KeyPressMsg); ok {
 		switch key.String() {
 		case "ctrl+up", "ctrl+k":
@@ -180,7 +178,7 @@ func (m newTUIModel) View() tea.View {
 func (m newTUIModel) formView() tea.View {
 	s := m.styles
 
-	title := gradientText("Spin  Create Project — "+m.tpl.Name, theme.AccentAlt, theme.Accent)
+	title := gradientText("Spin  Create Project: "+m.tpl.Name, theme.AccentAlt, theme.Accent)
 
 	v := strings.TrimSuffix(m.form.View(), "\n\n")
 	form := lipgloss.NewStyle().Margin(1, 0).Render(v)

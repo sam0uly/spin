@@ -213,9 +213,7 @@ func TestManager_ResolveShorthandNotShorthand(t *testing.T) {
 	}
 }
 
-// TestManager_ResolveShorthandChainsOnce verifies the resolver
-// follows a template's `source` shorthand one level deep. A second
-// level of nesting is rejected (cycle protection).
+// TestManager_ResolveShorthandChainsOnce verifies the resolver follows a template's `source` shorthand one level.
 func TestManager_ResolveShorthandChainsOnce(t *testing.T) {
 	mgr := newTestManager(t)
 	srcA := t.TempDir()

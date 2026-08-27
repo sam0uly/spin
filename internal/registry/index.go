@@ -12,21 +12,15 @@ import (
 )
 
 // Index is a snapshot of every valid template under every registered
-// registry. Build scans once and the result is immutable for Search
-// calls -- a registry update is the caller's signal to rebuild.
-//
-// Index is built lazily on demand; it does not cache itself across
-// process runs. Each `spin search` is fast enough (sub-millisecond
-// per TOML file) that caching would add invalidation complexity for
-// no perceivable win.
+// registry. It is rebuilt on demand and not cached across runs; each
+// search is fast enough that caching adds complexity for no gain.
 type Index struct {
 	entries []TemplateEntry
 }
 
 // Build scans every registry's templates/*.toml, parses and
-// validates each file, and returns the resulting index. Invalid
-// files are skipped; the per-registry error counts are returned in
-// `errors` so the CLI can surface them in the update summary.
+// validates each file, and returns the resulting index plus a
+// per-registry count of skipped files.
 func (m Manager) Build(ctx context.Context) (*Index, map[string]int, error) {
 	cfg, err := m.Load(ctx)
 	if err != nil {
@@ -39,7 +33,7 @@ func (m Manager) Build(ctx context.Context) (*Index, map[string]int, error) {
 		entries, err := os.ReadDir(tplDir)
 		if err != nil {
 			if os.IsNotExist(err) {
-				continue // not yet populated -- treat as zero
+				continue // not yet populated: zero templates
 			}
 			skipCounts[reg.Alias]++
 			continue
@@ -76,24 +70,20 @@ func (m Manager) Build(ctx context.Context) (*Index, map[string]int, error) {
 	return idx, skipCounts, nil
 }
 
-// validTemplate enforces the registry template contract: id must be
-// present and match the file basename, source must be non-empty.
-// Other fields are advisory.
+// validTemplate reports whether tpl satisfies the registry template
+// contract: non-empty id, name, and source, with id matching the
+// file basename.
 func validTemplate(tpl *TemplateMetadata, fileName string) bool {
 	if tpl.ID == "" || tpl.Name == "" || tpl.Source == "" {
 		return false
 	}
-	// The id field must match the file basename (sans .toml). This
-	// prevents `<alias>/foo` from accidentally resolving to a file
-	// named `bar.toml`.
 	want := strings.TrimSuffix(fileName, ".toml")
 	return tpl.ID == want
 }
 
-// Search returns the entries whose alias, id, name, description, or
-// tags contain query as a substring, sorted by relevance:
-// exact id match > id substring > name > description > tag.
-// Empty query returns every entry in id-ascending order.
+// Search returns entries matching query as a substring of alias,
+// id, name, description, or tags, best matches first. An empty query
+// returns everything in ascending alias/id order.
 func (idx *Index) Search(query string, limit int) []TemplateEntry {
 	scored := make([]scoredEntry, 0, len(idx.entries))
 	q := strings.ToLower(query)
@@ -108,8 +98,8 @@ func (idx *Index) Search(query string, limit int) []TemplateEntry {
 		if scored[i].score != scored[j].score {
 			return scored[i].score > scored[j].score
 		}
-		// Tie-break on id (then alias) so a query like "go" surfaces
-		// go-api ahead of go-tui regardless of registry order.
+		// Tie-break deterministically so equal-scored results keep a
+		// stable order across runs.
 		if scored[i].entry.ID != scored[j].entry.ID {
 			return scored[i].entry.ID < scored[j].entry.ID
 		}
@@ -125,8 +115,8 @@ func (idx *Index) Search(query string, limit int) []TemplateEntry {
 	return out
 }
 
-// score returns a numeric relevance score. Higher is better. 0 means
-// "no match" (caller should filter).
+// score rates how well an entry matches q. Higher is better; 0 means
+// no match.
 func score(e TemplateEntry, q string) int {
 	if q == "" {
 		return 1
@@ -157,17 +147,14 @@ type scoredEntry struct {
 	score int
 }
 
-// Validate scans a single registry's metadata for completeness.
-// Returns a slice of error messages for the registry.toml (id, name)
-// and any templates/*.toml that fail to parse or fail validTemplate.
-// Empty slice means the registry is fully valid.
+// Validate returns one message per problem found in a registry's
+// metadata. An empty slice means the registry is fully valid.
 func (m Manager) Validate(ctx context.Context, alias string) []string {
 	reg, ok := m.Get(ctx, alias)
 	if !ok {
 		return []string{fmt.Sprintf("%s: not registered", alias)}
 	}
 	var out []string
-	// Registry-level
 	var rm RegistryMetadata
 	if _, err := toml.DecodeFile(filepath.Join(reg.Path, "registry.toml"), &rm); err != nil {
 		out = append(out, fmt.Sprintf("%s: registry.toml: %v", alias, err))

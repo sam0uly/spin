@@ -1,9 +1,6 @@
-// Package log provides a project-level charmbracelet/log logger for spin.
-//
-// It is intended for diagnostic, warning, and error messages — not for
-// styled user-facing success/info output, which remains in cmd/print.go.
-// The default logger writes to stderr with colors enabled, no timestamps,
-// and the info level.
+// Package log provides the project logger for diagnostics, warnings,
+// and errors. Styled user-facing output lives elsewhere; this package
+// writes to stderr with colors enabled and no timestamps.
 package log
 
 import (
@@ -12,17 +9,15 @@ import (
 	"charm.land/log/v2"
 )
 
-// Logger is the package-level logger used by spin. It writes to stderr
-// and is intended for warnings, errors, and diagnostic output. Callers
-// should prefer the Info/Warn/Error/Debug/Print helpers below.
+// Logger is the stderr logger used for warnings, errors, and
+// diagnostics. Prefer the helpers below over calling it directly.
 var Logger = log.NewWithOptions(os.Stderr, log.Options{
 	Level:           log.InfoLevel,
 	ReportTimestamp: false,
 })
 
-// Stdout is a secondary logger for user-facing informational output that
-// should appear on stdout (e.g. success messages). It shares the same
-// timestamp/level settings as Logger.
+// Stdout logs user-facing informational output to stdout, sharing its
+// settings with Logger.
 var Stdout = log.NewWithOptions(os.Stdout, log.Options{
 	Level:           log.InfoLevel,
 	ReportTimestamp: false,

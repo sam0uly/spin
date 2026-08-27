@@ -14,13 +14,11 @@ import (
 	"github.com/sam0uly/spin/internal/params"
 )
 
-// RunPreHook executes the template's [[pre]] steps (if any) after
-// params are resolved but before files are rendered. Each step's `run`
-// is rendered against the resolved param + flag values, then run via
-// `sh -c` in dir. Steps run in order; the hook stops on the first
-// failure and returns that error.
-//
-// An empty or missing pre section is a no-op.
+// RunPreHook executes the template's [[pre]] steps plus any scripts in
+// _pre/, in that order, after params resolve but before files render.
+// Each command is rendered against the resolved values and run via sh
+// -c in dir. The first failure stops the hook. A missing pre section
+// is a no-op.
 func RunPreHook(ctx context.Context, t *Template, values map[string]any, dir string, opts HookOptions) error {
 	if t == nil || t.SpinToml == nil {
 		return nil
@@ -68,24 +66,22 @@ func HasHooks(t *Template) bool {
 	return false
 }
 
-// HookOptions controls how hooks are reported and whether they run.
+// HookOptions controls how hooks run and report.
 type HookOptions struct {
-	// NoHooks skips execution entirely. Commands are still printed if
+	// NoHooks skips execution. Commands are still printed when
 	// PrintCommands is true.
 	NoHooks bool
 	// PrintCommands prints each rendered command before running it.
 	PrintCommands bool
-	// Verbose streams hook output to the caller. When false, output is
-	// captured and only returned on failure.
+	// Verbose streams live command output instead of capturing it and
+	// only reporting on failure.
 	Verbose bool
-	// Output, when set, receives the echoed command lines and, when
-	// Verbose is true, the live command output of each step. It is used
-	// by the interactive TUI to stream hook execution into a viewport.
-	// When Output is nil, PrintCommands falls back to the package logger.
+	// Output receives echoed command lines and, with Verbose set, live
+	// output per step. When nil, printing falls back to the package
+	// logger.
 	Output io.Writer
-	// StepStart, when set, is called before each step runs so the caller
-	// can print a styled header. Only used when PrintCommands is true;
-	// falls back to a plain log line otherwise.
+	// StepStart, when set, is called before each step so callers can
+	// print a styled header.
 	StepStart func(kind, cmd string)
 }
 
@@ -137,7 +133,7 @@ func runHooks(ctx context.Context, kind string, steps []hookStep, values map[str
 				c.Stderr = os.Stderr
 			}
 			if err := c.Run(); err != nil {
-				flushWriter(opts.Output) // best-effort; run error takes priority
+				flushWriter(opts.Output)
 				return fmt.Errorf("%s-hook step %d %q failed: %w", kind, i+1, rendered, err)
 			}
 			if err := flushWriter(opts.Output); err != nil {
@@ -166,10 +162,9 @@ func flushWriter(w io.Writer) error {
 	return nil
 }
 
-// autoHookScripts returns shell commands for every file in
-// dir/<dirName>/, sorted alphabetically. Hidden files and subdirectories
-// are skipped. Executable files are run as ./<dirName>/<file>; otherwise
-// they are run with `sh`. The directory itself is allowed to be missing.
+// autoHookScripts returns shell commands for every non-hidden file in
+// dir/<dirName>/, sorted by name. Executable files run directly;
+// everything else runs through sh. A missing directory yields nil.
 func autoHookScripts(dir, dirName string) ([]string, error) {
 	fullDir := filepath.Join(dir, dirName)
 	entries, err := os.ReadDir(fullDir)
@@ -195,9 +190,9 @@ func autoHookScripts(dir, dirName string) ([]string, error) {
 	return scripts, nil
 }
 
-// scriptCommand returns the shell command used to run a single hook
-// script file: ./<dirName>/<name> when the file is executable, otherwise
-// `sh <dirName>/<name>`. The path component is single-quoted so filenames
+// scriptCommand returns the shell command that runs one hook script:
+// ./<dirName>/<name> when executable, otherwise sh <dirName>/<name>.
+// The path is single-quoted so filenames with spaces stay intact.
 // with spaces or shell metacharacters are safe.
 func scriptCommand(fullDir, dirName, name string) (string, error) {
 	info, err := os.Stat(filepath.Join(fullDir, name))

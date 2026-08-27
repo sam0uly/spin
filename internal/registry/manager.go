@@ -16,24 +16,21 @@ import (
 	srcspec "github.com/sam0uly/spin/internal/spec"
 )
 
-// ErrAliasInvalid is returned when an alias fails ValidateAlias. The
-// reason is included in the wrapped error so the CLI can surface it
-// verbatim.
+// ErrAliasInvalid is returned when an alias fails ValidateAlias.
 var ErrAliasInvalid = errors.New("invalid alias")
 
 // ErrAliasExists is returned by Manager.Add when the alias is already
-// registered and the caller did not pass force.
+// registered and force was not set.
 var ErrAliasExists = errors.New("alias already registered")
 
-// ErrRegistryMissing is returned by Manager.Refresh/Remove/Get when
-// the named alias is not in registries.json.
+// ErrRegistryMissing is returned when the named alias is not in
+// registries.json.
 var ErrRegistryMissing = errors.New("alias not registered")
 
-// Manager owns the local registry catalogue (registries.json) and
-// the on-disk caches under CacheDir/registries/<alias>/. It does not
-// parse template metadata; that lives in index.go.
+// Manager owns the registry catalogue (registries.json) and the
+// on-disk clones under CacheDir/registries/<alias>/.
 type Manager struct {
-	CacheDir string // ~/.config/spin by default
+	CacheDir string // defaults to ~/.config/spin
 }
 
 // NewManager returns a Manager rooted at the default config dir. Use
@@ -57,10 +54,9 @@ func (m Manager) RegistriesDir() string {
 	return filepath.Join(m.CacheDir, "registries")
 }
 
-// ValidateAlias checks that alias is safe to use as both a directory
-// name under the cache root and a CLI argument. Reject path
-// traversal, control chars, and shell-hostile characters before any
-// filesystem write. Empty alias is rejected.
+// ValidateAlias reports whether alias is safe to use as a directory
+// name and CLI argument: no path traversal, control characters,
+// whitespace, or ':' and NUL.
 func ValidateAlias(alias string) error {
 	if alias == "" {
 		return fmt.Errorf("%w: empty", ErrAliasInvalid)
@@ -83,9 +79,9 @@ func ValidateAlias(alias string) error {
 	return nil
 }
 
-// Load reads registries.json. A missing file is not an error: returns
-// (empty, nil). A corrupt file surfaces a wrapped error so the CLI
-// can suggest removing it.
+// Load reads registries.json. A missing file yields an empty config,
+// not an error; a corrupt file returns a wrapped error so the CLI
+// can suggest deleting it.
 func (m Manager) Load(ctx context.Context) (RegistriesConfig, error) {
 	if err := ctx.Err(); err != nil {
 		return RegistriesConfig{}, err
@@ -168,9 +164,7 @@ func (m Manager) Add(ctx context.Context, alias, source string, force bool) (Reg
 		return Registry{}, fmt.Errorf("create cache directory: %w", err)
 	}
 
-	// Drop any existing entry first (--force). We do this AFTER
-	// validation passes but BEFORE the new clone so the cache slot
-	// is clean.
+	// Drop any existing cache slot first (--force).
 	if force {
 		if err := os.RemoveAll(dest); err != nil {
 			log.Debug("failed to remove existing registry cache", "path", dest, "err", err)
@@ -182,8 +176,8 @@ func (m Manager) Add(ctx context.Context, alias, source string, force bool) (Reg
 		return Registry{}, err
 	}
 
-	// Final sanity check: the destination must contain registry.toml.
-	// If not, the source wasn't a registry -- roll back and error.
+	// The destination must contain registry.toml and templates/, else
+	// the source was not a registry: roll back and fail.
 	if _, err := os.Stat(filepath.Join(dest, "registry.toml")); err != nil {
 		if rmErr := os.RemoveAll(dest); rmErr != nil {
 			log.Debug("failed to clean up invalid registry cache", "path", dest, "err", rmErr)
@@ -213,10 +207,9 @@ func (m Manager) Add(ctx context.Context, alias, source string, force bool) (Reg
 	return reg, nil
 }
 
-// cloneOrLink branches on whether source is local or git. Local
-// sources symlink (copy-fallback on Windows); git sources shallow-
-// clone to a sibling temp dir then rename into dest so a failed
-// clone leaves no garbage under registries/<alias>/.
+// cloneOrLink symlinks local sources and shallow-clones git sources.
+// Git clones land in a sibling temp dir first and are renamed into
+// place, so a failed clone leaves nothing behind.
 func (m Manager) cloneOrLink(ctx context.Context, alias, source, dest string) (RegistryKind, error) {
 	if srcspec.IsLocalPath(source) {
 		src, err := expandHome(source)
@@ -250,8 +243,6 @@ func (m Manager) cloneOrLink(ctx context.Context, alias, source, dest string) (R
 		return "", fmt.Errorf("create temp directory: %w", err)
 	}
 	defer func() {
-		// If we never renamed tmp into dest, clean it up. The
-		// rename below clears the tmp path so this is a no-op.
 		if _, err := os.Stat(tmp); err == nil {
 			if rmErr := os.RemoveAll(tmp); rmErr != nil {
 				log.Debug("failed to clean up registry clone temp dir", "path", tmp, "err", rmErr)
@@ -288,11 +279,10 @@ func (m Manager) upsert(ctx context.Context, reg Registry) error {
 	return m.writeRegistries(cfg)
 }
 
-// Refresh pulls the latest commits for a git registry and reports
-// whether anything actually changed. Local registries are a no-op
-// (changed=false). Returns ErrRegistryMissing when alias is not
-// registered. LastUpdated is only stamped when the git HEAD moves,
-// so an up-to-date registry keeps its old timestamp.
+// Refresh fetches and resets a git registry to its upstream HEAD.
+// Local registries are a no-op with changed=false. LastUpdated is
+// stamped only when HEAD moved. Returns ErrRegistryMissing for an
+// unregistered alias.
 func (m Manager) Refresh(ctx context.Context, alias string) (Registry, bool, error) {
 	cfg, err := m.Load(ctx)
 	if err != nil {
@@ -303,7 +293,6 @@ func (m Manager) Refresh(ctx context.Context, alias string) (Registry, bool, err
 			continue
 		}
 		if r.Kind == KindLocal {
-			// No-op; nothing changed and nothing to stamp.
 			return r, false, nil
 		}
 		before, _ := gitHeadSHA(r.Path)
@@ -327,9 +316,9 @@ func (m Manager) Refresh(ctx context.Context, alias string) (Registry, bool, err
 	return Registry{}, false, fmt.Errorf("%w: %q", ErrRegistryMissing, alias)
 }
 
-// RefreshAll refreshes every git registry in declaration order.
-// Returns one error per failure so the CLI can print a per-registry
-// summary; the loop never aborts on the first failure.
+// RefreshAll refreshes every git registry in declaration order,
+// collecting per-registry failures instead of stopping at the first
+// one.
 func (m Manager) RefreshAll(ctx context.Context) ([]Registry, []string, []error) {
 	cfg, err := m.Load(ctx)
 	if err != nil {
@@ -356,14 +345,12 @@ func (m Manager) RefreshAll(ctx context.Context) ([]Registry, []string, []error)
 	return updated, skipped, errs
 }
 
-// Bootstrap adds the built-in official registry on first run when
-// registries.json does not yet exist. It is a no-op when the file is
-// already present, including corrupt or unreadable files: we never
-// overwrite user data. First-run registration is serialized across
-// processes via a lock file so concurrent spin invocations cannot both
-// clone the official registry. Returns true when the official registry
-// was added. Failures (e.g. network unreachable) are returned so the
-// caller can surface them; the user can retry on a later command.
+// Bootstrap registers the official registry on first run, when
+// registries.json does not exist yet. It never overwrites user data:
+// an existing file (even corrupt) means no-op. Concurrent processes
+// are serialized via a lock file with a TTL so a crashed process
+// cannot block later boots forever. It reports whether the official
+// registry was added by this call.
 func (m Manager) Bootstrap(ctx context.Context) (bool, error) {
 	if err := ctx.Err(); err != nil {
 		return false, err
@@ -371,10 +358,8 @@ func (m Manager) Bootstrap(ctx context.Context) (bool, error) {
 	if _, err := os.Stat(m.RegistriesPath()); err == nil || !os.IsNotExist(err) {
 		return false, nil
 	}
-	// Serialize first-run registration: claim an exclusive lock file
-	// before re-checking RegistriesPath so two concurrent spin
-	// processes cannot both register the official registry. The claim
-	// is released once Add finishes.
+	// Serialize first-run registration so two concurrent spin
+	// processes cannot both clone the official registry.
 	lockPath := filepath.Join(m.CacheDir, ".bootstrap.lock")
 	if err := os.MkdirAll(m.CacheDir, 0o755); err != nil {
 		return false, err
@@ -384,8 +369,7 @@ func (m Manager) Bootstrap(ctx context.Context) (bool, error) {
 		return false, err
 	}
 	if !claimed {
-		// Another process is bootstrapping; defer to it.
-		return false, nil
+		return false, nil // another process is bootstrapping
 	}
 	defer releaseBootstrapLock(lockPath)
 	// Double-checked locking: the winning process may have finished
@@ -400,19 +384,13 @@ func (m Manager) Bootstrap(ctx context.Context) (bool, error) {
 }
 
 // bootstrapLockTTL is how long a .bootstrap.lock claim may stand
-// before a later process treats it as stale. The lock only guards
-// first-run registration; a process that crashes mid-bootstrap leaves
-// a claim behind, and the TTL lets a later command reclaim it instead
-// of deferring forever. It is generous so a slow clone is never
-// misread as stale.
+// before a later process treats it as stale. Generous so a slow
+// clone is never misread as stale.
 const bootstrapLockTTL = 2 * time.Minute
 
-// acquireBootstrapLock atomically claims lockPath with O_CREATE|O_EXCL
-// and reports whether this process won the claim. A fresh claim held
-// by another process yields false (the caller defers to it). A stale
-// claim, left by a crashed process, is moved aside via an atomic
-// rename and re-claimed, so a crash cannot block first-run bootstrap
-// permanently.
+// acquireBootstrapLock atomically claims lockPath with O_CREATE|O_EXCL.
+// A fresh claim held elsewhere yields false. A stale claim older than
+// bootstrapLockTTL is removed and re-claimed.
 func acquireBootstrapLock(lockPath string) (bool, error) {
 	for {
 		lock, err := os.OpenFile(lockPath, os.O_CREATE|os.O_EXCL, 0o600)
@@ -433,29 +411,19 @@ func acquireBootstrapLock(lockPath string) (bool, error) {
 		if time.Since(info.ModTime()) < bootstrapLockTTL {
 			return false, nil
 		}
-		// Stale claim: move it aside atomically, then retry. If a
-		// concurrent process wins the rename first, the retry sees its
-		// fresh claim and defers.
-		stalePath := lockPath + ".stale"
-		if err := os.Rename(lockPath, stalePath); err != nil && !os.IsNotExist(err) {
-			return false, err
-		}
-		_ = os.Remove(stalePath)
+		_ = os.Remove(lockPath)
 	}
 }
 
-// releaseBootstrapLock drops a claim held by this process. Best-effort:
-// a leftover lock file is reclaimed later via the staleness TTL.
+// releaseBootstrapLock drops a claim held by this process. A leaked
+// claim expires via bootstrapLockTTL.
 func releaseBootstrapLock(lockPath string) {
 	_ = os.Remove(lockPath)
 }
 
-// Remove drops alias from registries.json and deletes the cache
-// directory under registries/<alias>/. pinnedTemplates is the
-// current Pinned list; if any pin's Source points inside the
-// registry's path or matches its source URL, Remove refuses unless
-// purgePinned is also true (in which case the offending pins are
-// soft-deleted via Unpin before the cache is removed).
+// Remove drops alias from registries.json and deletes its cache
+// directory. When pinned templates depend on the registry, Remove
+// fails unless purgePinned also soft-deletes those pins.
 func (m Manager) Remove(ctx context.Context, alias string, pinnedTemplates []Pinned, purgePinned bool) error {
 	cfg, err := m.Load(ctx)
 	if err != nil {
@@ -491,33 +459,28 @@ func (m Manager) Remove(ctx context.Context, alias string, pinnedTemplates []Pin
 	}
 
 	if match.Path != "" {
-		// Use os.RemoveAll on the actual filesystem path. For local
-		// registries the path is a symlink -- RemoveAll removes the
-		// link itself, not the target.
+		// RemoveAll on a symlink deletes the link itself, not the target.
 		if err := os.RemoveAll(match.Path); err != nil && !os.IsNotExist(err) {
 			return fmt.Errorf("delete cache %s: %w", match.Path, err)
 		}
 	}
 
-	// After the registry is gone, mark dependent pins removed (the
-	// caller's Purge is responsible for actually deleting their
-	// caches). Done outside the unlink so a failure here doesn't
-	// leave a registry entry pointing at a deleted cache.
+	// Soft-delete dependent pins after unlinking so a pin-write
+	// failure cannot leave a registry entry pointing at a deleted
+	// cache.
 	for _, p := range dependents {
 		_ = (&Client{CacheDir: m.CacheDir}).Unpin(ctx, p.Name)
 	}
 	return nil
 }
 
-// findDependentPins returns the subset of pinned whose Source
-// matches a template's source URL inside the registry (the pin was
-// cloned FROM the registry) or whose LocalPath lives under the
-// registry's directory (local registry case).
+// findDependentPins returns the pins cloned from this registry's
+// templates, or whose cache lives inside a local registry's path.
 func (m Manager) findDependentPins(reg Registry, pinned []Pinned) []Pinned {
 	if reg.Path == "" {
 		return nil
 	}
-	// Collect the set of template `source` fields under this registry.
+	// Collect template source URLs declared by this registry.
 	templateSources := make(map[string]bool)
 	tplDir := filepath.Join(reg.Path, "templates")
 	if entries, err := os.ReadDir(tplDir); err == nil {
@@ -550,9 +513,7 @@ func (m Manager) findDependentPins(reg Registry, pinned []Pinned) []Pinned {
 	return out
 }
 
-// writeRegistries writes the registries config atomically: marshal
-// to JSON, write to a sibling temp file, fsync, then rename. Mirrors
-// writePinned in client.go.
+// writeRegistries persists the registry catalogue atomically.
 func (m Manager) writeRegistries(cfg RegistriesConfig) error {
 	return atomicWriteJSON(m.RegistriesPath(), cfg, ".registries-*.json.tmp")
 }

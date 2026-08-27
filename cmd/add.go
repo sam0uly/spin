@@ -46,20 +46,14 @@ func runAdd(cmd *cobra.Command, args []string) error {
 
 	spec := strings.TrimSpace(args[0])
 
-	// `<alias>/<id>` shorthand: resolve via the registry index,
-	// then pin the resolved source as if the user had typed it
-	// directly. The pin's Name stays the template's id (so
-	// `spin new <name>` keeps working) and the Source stores the
-	// resolved git URL or local path.
+	// <alias>/<id> shorthand: resolve through the registry, then pin
+	// the resolved source as if typed directly. Name stays the template
+	// id so `spin new <name>` keeps working.
 	if registry.IsShorthand(spec) {
 		mgr := registry.NewManager()
-		// First-run: add the official registry so the shorthand can
-		// resolve without manual setup (same behavior as `spin new`).
 		maybeBootstrapOfficial(ctx, mgr)
 		resolved, err := mgr.ResolveShorthand(ctx, spec)
 		if err != nil {
-			// Re-add hint for the removed built-in registry; for any
-			// other missing alias fall back to the generic guidance.
 			if enriched, ok := annotateShorthandError(err); ok {
 				return enriched
 			}
@@ -91,8 +85,6 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Print a human-friendly confirmation that mentions the on-disk
-	// location and the kind of source (cloned git repo vs local).
 	kind := "cloned to"
 	if pinned.Version == "local" {
 		kind = "local at"

@@ -32,10 +32,9 @@ func init() {
 	rootCmd.AddCommand(listCmd)
 }
 
-// pinnedRow is the JSON-friendly view of a Pinned template. We
-// don't reuse registry.Pinned directly because Pinned is the
-// on-disk schema (with internal field names); pinnedRow is the
-// stable, user-facing view that scripts can rely on.
+// pinnedRow is the JSON-friendly, user-facing view of a pin. It is
+// deliberately separate from registry.Pinned so the on-disk schema
+// can evolve without breaking script consumers.
 type pinnedRow struct {
 	Name        string `json:"name"`
 	Version     string `json:"version"`
@@ -46,10 +45,8 @@ type pinnedRow struct {
 	Removed     bool   `json:"removed,omitempty"`
 }
 
-// execList prints the pinned templates. Default is a styled
-// table; --json switches to a JSON array on stdout. Both paths
-// share the same data layer (pinnedRow) so behaviour is
-// consistent.
+// execList prints pinned templates as a styled table, or as JSON with
+// --json.
 func execList(cmd *cobra.Command, args []string) error {
 	client := registry.New()
 	var pinned []registry.Pinned
@@ -114,9 +111,9 @@ func execList(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// pinnedDescription returns the Description field of the spin.toml
-// at localPath, or "" if it can't be read. The lookup is best-effort:
-// a missing or malformed manifest shouldn't fail `spin list`.
+// pinnedDescription returns the Description from the spin.toml at
+// localPath; a missing or malformed manifest yields "" rather than
+// failing the listing.
 func pinnedDescription(localPath string) string {
 	if localPath == "" {
 		return ""
@@ -128,9 +125,8 @@ func pinnedDescription(localPath string) string {
 	return st.Description
 }
 
-// shortenLocal renders p with ~ for the user's home directory
-// when possible (e.g. "~/.config/spin/templates/test-template"),
-// or as the absolute path otherwise. Empty paths show "(unknown)".
+// shortenLocal abbreviates the user's home directory to ~ when
+// possible; empty paths render as "(unknown)".
 func shortenLocal(p, _ string) string {
 	if p == "" {
 		return "(unknown)"

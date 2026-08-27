@@ -6,12 +6,10 @@ import (
 	"github.com/sam0uly/spin/internal/licenses"
 )
 
-// LicenseParam is a select-style param over the built-in license list.
-// Declaring `type = "license"` in spin.toml is the explicit opt-in
-// contract for built-in licensing: the user picks a license at scaffold
-// time and spin writes the generated project's LICENSE file from the
-// resolved value. Options default to the curated SPDX set plus "None";
-// templates can override with their own options.
+// LicenseParam is a select over the built-in license list. Declaring
+// `type = "license"` in spin.toml opts the template into built-in
+// licensing: spin writes the generated project's LICENSE from the
+// resolved value.
 type LicenseParam struct {
 	*SelectParam
 }

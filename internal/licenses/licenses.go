@@ -1,12 +1,11 @@
-// Package licenses provides the supported built-in license set for
-// `spin new`. The canonical texts are vendored verbatim from the SPDX
+// Package licenses provides the built-in license set for `spin new`.
+// The canonical texts are vendored verbatim from the SPDX
 // license-list-data repository (https://spdx.org/licenses/), embedded
-// into the binary, and accessed through Known/IsKnown/Render.
+// into the binary, and accessed through Known, IsKnown, and Render.
 //
-// This is intentionally a small, curated set -- not a complete SPDX
-// catalog and not a license-management system. Licenses outside the
-// set are template-owned: a template can use a plain select param or
-// ship its own _base/LICENSE file.
+// This is intentionally a small curated set, not a complete SPDX
+// catalog. Licenses outside the set are template-owned: a template can
+// use a plain select param or ship its own _base/LICENSE file.
 package licenses
 
 import (

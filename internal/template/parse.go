@@ -9,11 +9,10 @@ import (
 	"github.com/sam0uly/spin/internal/params"
 )
 
-// rawSpinToml is the intermediate shape BurntSushi/toml decodes into.
-// We hold [params] as a map of any so the shorthand `name = "default"`
-// (string) and the full form `name = { type = "...", ... }` (inline
-// table) can both land in the same map; the post-pass below turns the
-// any into a concrete params.Spec.
+// rawSpinToml is the intermediate decode target for spin.toml. Params
+// stays a map of any so the shorthand `name = "default"` and the full
+// `name = { type = ... }` forms share one field; parseTOML converts
+// them to params.Spec afterwards.
 type rawSpinToml struct {
 	Name           string         `toml:"name"`
 	Description    string         `toml:"description"`
@@ -37,12 +36,9 @@ type rawAuthor struct {
 	URL   string `toml:"url"`
 }
 
-// parseTOML decodes a spin.toml document. It uses BurntSushi/toml
-// (the de-facto Go TOML library, originally proposed for stdlib) for
-// the heavy lifting, then walks the raw params map to convert
-// shorthand entries (`name = "default"`) into a text-typed params.Spec
-// and inline-table entries (`name = { type = "select", ... }`) into
-// a fully populated Spec.
+// parseTOML decodes a spin.toml document into st, converting each
+// [params] entry (shorthand string or inline table) into a
+// params.Spec.
 func parseTOML(b []byte, st *SpinToml) error {
 	var raw rawSpinToml
 	if err := toml.Unmarshal(b, &raw); err != nil {
@@ -73,13 +69,12 @@ func parseTOML(b []byte, st *SpinToml) error {
 	return nil
 }
 
-// coerceParamValue turns one entry of [params] into a params.Spec.
-// The input is the any BurntSushi/toml produced: a string for the
-// shorthand, a map[string]any for the inline-table form.
+// coerceParamValue converts one [params] entry into a params.Spec.
+// A string is shorthand for a text param with that default; an inline
+// table is the full form.
 func coerceParamValue(v any) (params.Spec, error) {
 	switch x := v.(type) {
 	case string:
-		// shorthand: name = "default" ⇒ { type = "text", default = "default" }
 		return params.Spec{Type: params.TypeText, Default: x}, nil
 	case map[string]any:
 		return specFromMap(x), nil
@@ -116,9 +111,7 @@ func specFromMap(m map[string]any) params.Spec {
 			}
 		}
 	}
-	// A license param with no options gets the built-in set, so
-	// `--param license=MIT` validates against the curated list and
-	// the interactive form has something to offer.
+	// License params default to the built-in option set.
 	if spec.Type == params.TypeLicense && len(spec.Options) == 0 {
 		spec.Options = licenses.Options()
 	}

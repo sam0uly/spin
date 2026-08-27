@@ -13,9 +13,7 @@ import (
 	"github.com/sam0uly/spin/internal/template"
 )
 
-// keyPress builds a tea.KeyPressMsg for a single key. "enter" maps to
-// the carriage-return code; any other single character uses its rune
-// as both Code and Text so String() echoes it back.
+// keyPress builds a tea.KeyPressMsg for a single key.
 func keyPress(s string) tea.KeyPressMsg {
 	if s == "enter" {
 		return tea.KeyPressMsg{Code: '\r'}
@@ -23,9 +21,7 @@ func keyPress(s string) tea.KeyPressMsg {
 	return tea.KeyPressMsg{Code: rune(s[0]), Text: s}
 }
 
-// writeFixtureTemplate creates a minimal template on disk with an inline
-// pre-hook, a _pre script file, and an inline post-hook, plus one _base
-// file, then loads it.
+// writeFixtureTemplate creates a minimal template with inline pre/post steps plus script files.
 func writeFixtureTemplate(t *testing.T) *template.Template {
 	t.Helper()
 	dir := t.TempDir()
@@ -81,11 +77,7 @@ func pump(t *testing.T, m hooksModel, cmd tea.Cmd) hooksModel {
 	return m
 }
 
-// TestHooksTUI_SelectedHookContent verifies that while reviewing
-// (before running) the right pane shows the SELECTED hook's content:
-// the inline command for [[pre]]/[[post]] steps, or the file
-// contents of a _pre/_post script. Switching the list selection
-// switches the pane content.
+// TestHooksTUI_SelectedHookContent verifies the right pane previews the selected hook.
 func TestHooksTUI_SelectedHookContent(t *testing.T) {
 	tpl := writeFixtureTemplate(t)
 	resolved := map[string]any{"name": "myapp", "project_name": "myapp"}
@@ -193,9 +185,7 @@ func TestHooksTUI_RunAllScaffolds(t *testing.T) {
 	}
 }
 
-// TestHooksTUI_ModalRendersCanvas verifies the Run/Skip modal renders
-// (via canvas + layered composition) without panicking and shows the
-// template name, the hook summary, and the Run/Skip choices.
+// TestHooksTUI_ModalRendersCanvas verifies the Run/Skip modal renders (via canvas + layered composition) without.
 func TestHooksTUI_ModalRendersCanvas(t *testing.T) {
 	tpl := writeFixtureTemplate(t)
 	resolved := map[string]any{"name": "myapp", "project_name": "myapp"}
@@ -213,13 +203,7 @@ func TestHooksTUI_ModalRendersCanvas(t *testing.T) {
 	}
 }
 
-// TestHooksTUI_ModalKeepsRightBorder verifies the run/skip modal does not
-// clip the view pane's right border. The modal is composited over the full
-// screen via a canvas; the canvas must be sized to the rendered base (which
-// already includes the Base style's horizontal frame) so its right edge is
-// not truncated. Every rendered line that contains a box-drawing │ must end
-// with one, otherwise the view pane's right border on the rows the modal does
-// not overlap has been clipped.
+// TestHooksTUI_ModalKeepsRightBorder verifies the run/skip modal does not clip the view pane's right border.
 func TestHooksTUI_ModalKeepsRightBorder(t *testing.T) {
 	tpl := writeFixtureTemplate(t)
 	resolved := map[string]any{"name": "myapp", "project_name": "myapp"}

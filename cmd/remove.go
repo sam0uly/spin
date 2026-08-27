@@ -31,10 +31,9 @@ func init() {
 	rootCmd.AddCommand(removeCmd)
 }
 
-// runRemove is the RunE for `spin remove`. Reads pinned.json
-// (including soft-deleted entries so --purge after a plain remove
-// still finds the row), and either marks the pin removed (default)
-// or drops both the record and its on-disk cache (--purge).
+// runRemove implements `spin remove`: soft-delete by default, or drop
+// the record and its cache with --purge. Soft-deleted entries are
+// still visible here so a later --purge can find them.
 func runRemove(cmd *cobra.Command, args []string) error {
 	name := args[0]
 	client := registry.New()

@@ -8,10 +8,7 @@ import (
 	"github.com/sam0uly/spin/internal/params"
 )
 
-// TestParseTOML_AllFields verifies the full spin.toml schema decodes:
-// the new metadata fields (version, author, license, repository,
-// min_spin_version, exclude) plus the existing name/description/type/
-// language/params/post/tags. This locks in the schema extension.
+// TestParseTOML_AllFields verifies the full spin.
 func TestParseTOML_AllFields(t *testing.T) {
 	input := `
 name             = "rust-cli"
@@ -107,9 +104,7 @@ run = "git init"
 	}
 }
 
-// TestParseTOML_LicenseParamOptionsFilled verifies a `type =
-// "license"` param with no options gets the built-in SPDX set plus
-// "None", so --param values validate and the form has options.
+// TestParseTOML_LicenseParamOptionsFilled verifies license params default to the built-in option set.
 func TestParseTOML_LicenseParamOptionsFilled(t *testing.T) {
 	input := `name = "t"
 

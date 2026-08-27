@@ -18,10 +18,8 @@ import (
 var ErrUnresolved = errors.New("shorthand unresolved")
 
 // AliasNotRegisteredError is returned by ResolveShorthand when the
-// alias part of a `<alias>/<id>` spec is not a registered registry.
-// It carries the alias so the CLI can enrich the failure with
-// user-facing hints; the registry package itself stays
-// transport-agnostic and never emits CLI guidance.
+// alias in an `<alias>/<id>` spec has no registered registry. It
+// carries the alias so callers can add their own hints.
 type AliasNotRegisteredError struct {
 	Alias string
 }
@@ -41,10 +39,8 @@ func splitAliasID(spec string) (alias, id string) {
 	return SplitAliasID(spec)
 }
 
-// Resolved is the output of ResolveShorthand: the template's
-// upstream source plus the kind (local or git) for downstream
-// consumers like the template Loader. Alias and ID are the original
-// parts the user typed.
+// Resolved is the output of ResolveShorthand: the template's source,
+// its kind, and the alias/id parts the user typed.
 type Resolved struct {
 	Alias  string
 	ID     string
@@ -52,18 +48,16 @@ type Resolved struct {
 	Kind   RegistryKind
 }
 
-// IsShorthand reports whether spec is a `<alias>/<id>` shorthand.
-// URLs and filesystem paths fall through to the local/git paths in
-// template.Loader.
+// IsShorthand reports whether spec looks like `<alias>/<id>`. URLs
+// and filesystem paths do not match.
 func IsShorthand(spec string) bool {
 	return srcspec.IsShorthand(spec)
 }
 
-// ResolveShorthand looks up `<alias>/<id>` against the manager's
-// registries. Returns ErrUnresolved when the alias is not
-// registered, the id is not present, or the template's source is
-// missing. Recurses once if the resolved source is itself a
-// shorthand (max depth 2); cycles are rejected.
+// ResolveShorthand resolves `<alias>/<id>` against the registered
+// registries. It follows one level of shorthand-to-shorthand
+// indirection; longer chains are rejected as cycles. Returns
+// ErrUnresolved or AliasNotRegisteredError on failure.
 func (m Manager) ResolveShorthand(ctx context.Context, spec string) (Resolved, error) {
 	if err := ctx.Err(); err != nil {
 		return Resolved{}, err
@@ -71,9 +65,8 @@ func (m Manager) ResolveShorthand(ctx context.Context, spec string) (Resolved, e
 	return m.resolveShorthandDepth(ctx, spec, 0)
 }
 
-// resolveShorthandDepth is the internal recursive helper. depth=0 is
-// the user-typed spec; depth>0 means a previous resolution aliased
-// to another shorthand and we're following the chain.
+// resolveShorthandDepth is the recursive helper behind ResolveShorthand.
+// depth tracks shorthand chain length to bound cycles.
 func (m Manager) resolveShorthandDepth(ctx context.Context, spec string, depth int) (Resolved, error) {
 	if depth > 1 {
 		return Resolved{}, fmt.Errorf("shorthand chain too deep (cycle?): %s", spec)

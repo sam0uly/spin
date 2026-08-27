@@ -7,16 +7,11 @@ import (
 	"charm.land/huh/v2"
 )
 
-// PageSize is the number of params grouped per "page" in the huh
-// form. huh renders each Group as a separate page (user navigates
-// with Next/Prev), so this cap is also the visible pagination
-// granularity. 4 keeps the page scannable on a 24-line terminal.
+// PageSize is how many params share one form page in the huh form.
+// Four keeps a page scannable on a 24-line terminal.
 const PageSize = 4
 
-// Form builds a huh.Form from a slice of params. Params are
-// grouped PageSize-at-a-time into huh.Groups; each Group becomes
-// one form page the user can step through with Next/Prev. A single
-// page is rendered when len(ps) <= PageSize.
+// Form builds a huh.Form from ps, grouped PageSize params per page.
 func Form(ps []Param, values map[string]any) *huh.Form {
 	if len(ps) == 0 {
 		return huh.NewForm()
@@ -33,27 +28,23 @@ func Form(ps []Param, values map[string]any) *huh.Form {
 	return huh.NewForm(groups...)
 }
 
-// Run executes the form on the given params. The form populates each
-// param's value in place. values are the currently known template
-// values, used to render prompts/defaults.
+// Run executes the form on ps, populating each param's value in
+// place.
 func Run(ps []Param, values map[string]any) error {
 	return Form(ps, values).Run()
 }
 
-// SetDefaults applies each param's default value to its current value.
-// Useful when running non-interactively. values are used to render any
-// templated defaults.
+// SetDefaults applies each param's default value; used when running
+// non-interactively.
 func SetDefaults(ps []Param, values map[string]any) {
 	for _, p := range ps {
 		p.SetDefault(values)
 	}
 }
 
-// FromAny converts a raw CLI/default value (string, int, bool,
-// []string, []any) into a params.Value suitable for Param.Apply. The
-// Value's Kind is derived from the Go type; each param's Apply picks
-// the field it cares about, so a string maps cleanly onto text,
-// select, textarea, secret and path params.
+// FromAny converts a raw CLI or default value into a Value whose Kind
+// is derived from the Go type. Each param's Apply picks the field it
+// cares about.
 func FromAny(v any) Value {
 	switch x := v.(type) {
 	case string:
@@ -76,12 +67,9 @@ func FromAny(v any) Value {
 	return Value{}
 }
 
-// ValidateDefaults checks resolved param values for consistency in the
-// non-interactive path, where huh's per-field Validate does not run.
-// It enforces that a select param's value is one of its options: a
-// templated default (e.g. `default = "{{ .ed }}"`) or a --param value
-// that resolves outside the option list would otherwise pass through
-// silently and produce a broken scaffold.
+// ValidateDefaults checks select-style params in the non-interactive
+// path, where huh's per-field validation does not run: a value outside
+// the option list is an error rather than a broken scaffold.
 func ValidateDefaults(ps []Param) error {
 	for _, p := range ps {
 		var s *SelectParam

@@ -10,10 +10,7 @@ import (
 	"github.com/sam0uly/spin/internal/registry"
 )
 
-// writeMiniRegistry creates a minimal valid registry at root
-// (registry.toml + templates/<id>.toml) so a local-path source
-// passes Add's sanity checks. Mirrors the registry package's test
-// fixture for use outside that package.
+// writeMiniRegistry creates a minimal valid registry at root (registry.toml + templates/<id>.
 func writeMiniRegistry(t *testing.T, root string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Join(root, "templates"), 0o755); err != nil {
@@ -29,9 +26,7 @@ func writeMiniRegistry(t *testing.T, root string) {
 	}
 }
 
-// TestMaybeBootstrapOfficial_FirstRun adds the official registry when
-// registries.json does not exist. The URL is redirected to a local
-// fixture so no network is touched.
+// TestMaybeBootstrapOfficial_FirstRun adds the official registry when registries.json does not exist.
 func TestMaybeBootstrapOfficial_FirstRun(t *testing.T) {
 	src := t.TempDir()
 	writeMiniRegistry(t, src)
@@ -46,9 +41,7 @@ func TestMaybeBootstrapOfficial_FirstRun(t *testing.T) {
 	}
 }
 
-// TestAnnotateShorthandError verifies the CLI enrichment: the
-// official alias gets a re-add hint, while other aliases (and nil)
-// pass through unchanged.
+// TestAnnotateShorthandError verifies the CLI enrichment: the official alias gets a re-add hint, while other.
 func TestAnnotateShorthandError(t *testing.T) {
 	enriched, ok := annotateShorthandError(registry.AliasNotRegisteredError{Alias: "official"})
 	if !ok {
@@ -72,10 +65,7 @@ func TestAnnotateShorthandError(t *testing.T) {
 	}
 }
 
-// TestMaybeBootstrapOfficial_NoopWhenConfigured verifies the helper
-// does not touch the network or mutate registries.json when the file
-// already exists (e.g. the user removed the official registry on
-// purpose).
+// TestMaybeBootstrapOfficial_NoopWhenConfigured verifies the helper does not touch the network or mutate registries.
 func TestMaybeBootstrapOfficial_NoopWhenConfigured(t *testing.T) {
 	mgr := registry.NewManager().SetCacheDir(t.TempDir())
 	if err := os.WriteFile(mgr.RegistriesPath(), []byte(`{"registries":[]}`), 0o644); err != nil {

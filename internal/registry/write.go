@@ -15,8 +15,9 @@ func defaultConfigDir() string {
 	return filepath.Join(cache, "spin")
 }
 
-// atomicWriteJSON marshals data to indented JSON and writes it to path
-// atomically (temp file → fsync → rename).
+// atomicWriteJSON marshals data as indented JSON and writes it to
+// path atomically via a temp file and rename, so a crash mid-write
+// cannot leave a corrupt file behind.
 func atomicWriteJSON(path string, data any, tmpPrefix string) error {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0o755); err != nil {

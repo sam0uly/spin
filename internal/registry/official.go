@@ -4,7 +4,7 @@ package registry
 // registered under on first run.
 const OfficialAlias = "official"
 
-// DefaultRegistryURL is the git source of the built-in official
-// registry, bootstrapped on first run. It is a variable, not a
-// constant, so tests can redirect it to a local fixture.
+// DefaultRegistryURL is the git source of the official registry that
+// is bootstrapped on first run. It is a variable so tests can point
+// it at a local fixture.
 var DefaultRegistryURL = "https://github.com/spin-templates/registry"

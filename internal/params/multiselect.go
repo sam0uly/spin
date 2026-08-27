@@ -6,6 +6,7 @@ import (
 	"charm.land/huh/v2"
 )
 
+// MultiSelectParam is a multi-choice prompt over a fixed option list.
 type MultiSelectParam struct {
 	name    string
 	prompt  string

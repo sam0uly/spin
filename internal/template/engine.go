@@ -10,6 +10,7 @@ import (
 	"text/template"
 )
 
+// renderFile renders one .tmpl file against values.
 func renderFile(path string, values map[string]any, funcs template.FuncMap) ([]byte, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -26,8 +27,8 @@ func renderFile(path string, values map[string]any, funcs template.FuncMap) ([]b
 	return buf.Bytes(), nil
 }
 
-// writeFiles writes a rel-path → bytes map to a destination directory.
-// Rejects any path that resolves outside dest (path-traversal guard).
+// writeFiles writes a rel-path to bytes map under dest, rejecting any
+// path that resolves outside it.
 func writeFiles(ctx context.Context, dest string, files map[string][]byte) error {
 	cleanDest := filepath.Clean(dest) + string(filepath.Separator)
 	if err := os.MkdirAll(dest, 0o755); err != nil {

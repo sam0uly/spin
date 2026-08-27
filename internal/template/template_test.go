@@ -9,10 +9,7 @@ import (
 	"github.com/sam0uly/spin/internal/params"
 )
 
-// TestTemplate_RenderToWithPost_DeletesSpinToml verifies that
-// RenderToWithPost removes spin.toml from the rendered output
-// (TPL-16). The test writes a Template with an empty _base/ to
-// avoid needing a real on-disk template.
+// TestTemplate_RenderToWithPost_DeletesSpinToml verifies that RenderToWithPost removes spin.
 func TestTemplate_RenderToWithPost_DeletesSpinToml(t *testing.T) {
 	base := t.TempDir()
 	dest := t.TempDir()
@@ -70,9 +67,7 @@ func TestTemplate_RenderToWithPost_NestedSpinToml(t *testing.T) {
 	}
 }
 
-// TestTemplate_RenderToWithPost_CopiesPreDir verifies that an optional
-// _pre/ directory next to spin.toml is copied into the generated project
-// before pre-hooks run.
+// TestTemplate_RenderToWithPost_CopiesPreDir verifies that an optional _pre/ directory next to spin.
 func TestTemplate_RenderToWithPost_CopiesPreDir(t *testing.T) {
 	base := t.TempDir()
 	pre := t.TempDir()
@@ -100,9 +95,7 @@ func TestTemplate_RenderToWithPost_CopiesPreDir(t *testing.T) {
 	}
 }
 
-// TestTemplate_RenderToWithPost_CopiesPostDir verifies that an optional
-// _post/ directory next to spin.toml is copied into the generated project
-// before post-hooks run.
+// TestTemplate_RenderToWithPost_CopiesPostDir verifies that an optional _post/ directory next to spin.
 func TestTemplate_RenderToWithPost_CopiesPostDir(t *testing.T) {
 	base := t.TempDir()
 	post := t.TempDir()
@@ -176,9 +169,7 @@ func TestTemplate_RenderToWithPost_AutoHookScripts(t *testing.T) {
 	}
 }
 
-// TestUnwrapValue verifies the primitive-extraction helper used by
-// the template renderer and the post-hook. Empty multiselect lists must
-// return []string{} so text/template sees the right type, not a string.
+// TestUnwrapValue verifies the primitive-extraction helper used by the template renderer and the post-hook.
 func TestUnwrapValue(t *testing.T) {
 	cases := []struct {
 		name string
@@ -246,12 +237,7 @@ func TestDefaultCacheDir_PrefersXDG(t *testing.T) {
 	}
 }
 
-// TestRender_Exclude verifies that paths matching any glob in
-// SpinToml.Exclude are skipped during render -- neither the .tmpl
-// nor the rendered output lands in the result map. This is the
-// primary use case for `exclude` (e.g. a CI badge file that
-// should stay literal, or a docs/ tree the author doesn't want
-// copied by default).
+// TestRender_Exclude verifies that paths matching any glob in SpinToml.
 func TestRender_Exclude(t *testing.T) {
 	base := t.TempDir()
 	if err := os.MkdirAll(base, 0o755); err != nil {
@@ -640,9 +626,7 @@ func TestRender_Exclude_DoubleStar_Trailing(t *testing.T) {
 	}
 }
 
-// TestShouldInclude_IsDir verifies the isDir parameter is used
-// correctly: directories that match a rule but have a falsy If
-// return skipDir=true so the walker prunes the subtree.
+// TestShouldInclude_IsDir verifies the isDir parameter is used correctly: directories that match a rule but have.
 func TestShouldInclude_IsDir(t *testing.T) {
 	base := t.TempDir()
 	subDir := filepath.Join(base, "opt")

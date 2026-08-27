@@ -7,10 +7,9 @@ import (
 	"charm.land/huh/v2"
 )
 
-// NumberParam has no dedicated huh type; we use NewInput + a Validate that
-// parses the input as int and applies Min/Max bounds. The string backing
-// field (valueStr) is what huh writes into via Value(&p.valueStr); the
-// numeric value is derived on demand from Value() and from SetDefaults.
+// NumberParam is an integer input validated against optional Min and
+// Max bounds. huh has no numeric field, so the form edits a string
+// that is parsed on demand.
 type NumberParam struct {
 	name     string
 	prompt   string

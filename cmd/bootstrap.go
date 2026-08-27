@@ -9,12 +9,10 @@ import (
 	"github.com/sam0uly/spin/internal/registry"
 )
 
-// maybeBootstrapOfficial registers the built-in official registry on
-// first run, when registries.json does not yet exist, and reports it
-// to the user. It is a no-op once the file is present, including when
-// the user removed the official registry on purpose. Failures (e.g.
-// no network) are surfaced as a warning and the caller proceeds; the
-// user can retry on a later command.
+// maybeBootstrapOfficial registers the official registry on first run
+// and reports it. Once registries.json exists it is a permanent no-op,
+// even if the user removed the official registry deliberately. A
+// failure (e.g. no network) becomes a warning and the command proceeds.
 func maybeBootstrapOfficial(ctx context.Context, mgr *registry.Manager) {
 	did, err := mgr.Bootstrap(ctx)
 	switch {
@@ -26,13 +24,10 @@ func maybeBootstrapOfficial(ctx context.Context, mgr *registry.Manager) {
 	}
 }
 
-// annotateShorthandError enriches a shorthand resolution failure with
-// a re-add hint when the missing alias is the built-in official
-// registry. The registry package only reports the structured
-// AliasNotRegisteredError; the hint is CLI presentation, so it lives
-// here. Returns the enriched error and true, or the original error
-// and false when nothing applies (nil, other failure kinds, or a
-// non-official alias with no known source).
+// annotateShorthandError adds a re-add hint when shorthand resolution
+// failed because the official registry is missing. Returns the
+// enriched error and true, or the original error and false when no
+// hint applies.
 func annotateShorthandError(err error) (error, bool) {
 	var notRegistered registry.AliasNotRegisteredError
 	if errors.As(err, &notRegistered) && notRegistered.Alias == registry.OfficialAlias {

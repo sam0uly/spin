@@ -79,11 +79,9 @@ func init() {
 	rootCmd.AddCommand(newCmd)
 }
 
-// runNew is the RunE for `spin new`. Resolves name + template
-// (positional / flag / interactive prompt), loads the template,
-// collects params (interactive or via --param), renders the
-// project, and runs [[post]] steps. Honors --print-params and
-// --dry-run as preview-only short circuits.
+// runNew implements `spin new`: resolve name and template, load the
+// template, collect params, render, and run hooks. --print-params,
+// --print-hooks, and --dry-run short-circuit as previews.
 func runNew(cmd *cobra.Command, args []string) error {
 	name, tplSpec, err := resolveNameAndTemplate(cmd, args)
 	if err != nil {
@@ -113,9 +111,8 @@ func runNew(cmd *cobra.Command, args []string) error {
 		loader.PromptExistingDest = promptExistingDest
 	}
 
-	// If the spec is a registry shorthand and no registries are
-	// configured yet, bootstrap the official registry so the
-	// shorthand can resolve without manual setup.
+	// A shorthand spec with no configured registries bootstraps the
+	// official one so it can resolve without manual setup.
 	if registry.IsShorthand(tplSpec) {
 		maybeBootstrapOfficial(cmd.Context(), registry.NewManager())
 	}
@@ -139,9 +136,8 @@ func runNew(cmd *cobra.Command, args []string) error {
 		}
 		maps.Copy(values, parsed)
 	}
-	// --print-params, --dry-run, and --param all force
-	// non-interactive so we never reask the user for answers they
-	// already supplied.
+	// Any explicit input forces non-interactive mode so we never
+	// re-ask for answers already supplied.
 	interactive := isInteractive() && !newPrintParams && !newPrintHooks && !newDryRun && len(newParams) == 0
 	var resolved map[string]any
 	renderedByTUI := false
@@ -168,8 +164,7 @@ func runNew(cmd *cobra.Command, args []string) error {
 		return dryRunRender(cmd.Context(), tpl, resolved, dest)
 	}
 
-	// When the TUI already ran the full scaffold (form + hook review),
-	// don't render a second time.
+	// The TUI path may have already scaffolded; don't render twice.
 	if renderedByTUI {
 		printSuccess("created %s at %s", name, dest)
 		printHint("cd %s", dest)
@@ -245,10 +240,8 @@ func dirHasFiles(path string) bool {
 	return err == nil && len(entries) > 0
 }
 
-// applyParamFlags parses the repeated --param slice into a typed
-// map keyed on the template's param spec. Unknown keys, malformed
-// key=value, or out-of-range numbers produce clear errors naming
-// the offending flag.
+// applyParamFlags parses repeated --param entries against the
+// template's param specs, rejecting unknown keys and malformed values.
 func applyParamFlags(tpl *template.Template, raw []string) (map[string]any, error) {
 	out := make(map[string]any, len(raw))
 	for i, entry := range raw {
@@ -306,8 +299,6 @@ func coerceParamValue(spec params.Spec, raw string) (any, error) {
 		}
 		return b, nil
 	case params.TypeMultiSelect:
-		// Comma-split, trim each, drop empties so a trailing comma
-		// or stray whitespace doesn't produce phantom options.
 		parts := strings.Split(raw, ",")
 		out := make([]string, 0, len(parts))
 		for _, p := range parts {
@@ -364,14 +355,10 @@ func validateNewArgs(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// resolveNameAndTemplate fills name and template from args /
-// --template / interactive prompts. Returns precise non-interactive
-// errors naming whichever slot is missing.
-//
-// A single positional argument that looks like a template spec
-// (local path, git URL, or <alias>/<id> shorthand) is treated as the
-// template; the user is then prompted for the project name. This
-// matches the common "spin up this template" mental model.
+// resolveNameAndTemplate fills name and template from positionals,
+// --template, or interactive prompts. A single positional that looks
+// like a template spec is treated as the template, matching the
+// common "scaffold this template" usage.
 func resolveNameAndTemplate(cmd *cobra.Command, args []string) (string, string, error) {
 	var name, tpl string
 	if len(args) == 1 && looksLikeTemplateSpec(args[0]) {
@@ -384,8 +371,7 @@ func resolveNameAndTemplate(cmd *cobra.Command, args []string) (string, string, 
 			tpl = args[1]
 		}
 	}
-	// Validator already rejected positional + --template; prefer the
-	// positional if both somehow arrive.
+	// Prefer the positional when both somehow arrive.
 	if cmd.Flags().Changed("template") {
 		if tpl != "" && newTemplate != "" && tpl != newTemplate {
 			printWarn("ignoring --template %q in favor of positional %q", newTemplate, tpl)
@@ -418,8 +404,8 @@ func resolveNameAndTemplate(cmd *cobra.Command, args []string) (string, string, 
 }
 
 // looksLikeTemplateSpec reports whether s is unambiguously a template
-// source: local path, git URL, or registry shorthand. Pinned names are
-// intentionally excluded -- they are resolved later by the loader.
+// source: local path, git URL, or shorthand. Pinned names are excluded;
+// they are resolved later by the loader.
 func looksLikeTemplateSpec(s string) bool {
 	return srcspec.IsLocalPath(s) || srcspec.IsGitURL(s) || srcspec.IsShorthand(s)
 }

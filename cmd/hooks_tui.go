@@ -64,10 +64,9 @@ func hooksViewContentW(totalW int) int {
 
 const hookHintShort = "R run all + scaffold • ←/→ focus • q/esc quit"
 
-// wrapForView hard-wraps s to the viewport width. It uses ansi.Hardwrap
-// so ANSI styling is preserved and long unbroken tokens (inline hook
-// commands, file contents) are broken across lines instead of
-// overflowing the pane edge.
+// wrapForView hard-wraps s to the viewport width via ansi.Hardwrap, so
+// styling is preserved and long unbroken tokens wrap instead of
+// overflowing the pane.
 func wrapForView(s string, width int) string {
 	if width <= 0 {
 		return s
@@ -75,13 +74,11 @@ func wrapForView(s string, width int) string {
 	return ansi.Hardwrap(s, width, false)
 }
 
-// hooksModel renders the interactive hook review screen. The left pane
-// lists every hook the template will run; the right pane streams the
-// live output when the hooks execute. Pressing R opens a centered
-// Run/Skip/Cancel modal (replacing the CLI trust prompt); confirming
-// Run or Skip executes the full scaffold (pre → render → post) and
-// streams its output into the right pane. The modal only asks whether
-// to run the hooks, never repeats the hook list.
+// hooksModel renders the interactive hook review screen: a hook list
+// on the left and a live output pane on the right. R opens a centered
+// Run/Skip/Cancel modal that replaces the CLI trust prompt; Run or Skip
+// executes the full scaffold (pre, render, post) with output streaming
+// into the right pane.
 type hooksModel struct {
 	styles   *tuiStyles
 	tpl      *template.Template
@@ -162,10 +159,9 @@ func newHooksModel(tpl *template.Template, styles *tuiStyles, width, height int,
 	return m
 }
 
-// selectedHookContent builds the right-pane content shown while the
-// user is reviewing hooks: the inline [[pre]]/[[post]] command or the
-// contents of the _pre/_post script file for the hook at idx. It is
-// replaced by streamed command + output once the scaffold runs.
+// selectedHookContent builds the right-pane preview for the hook at
+// idx: its inline command or script contents. Streamed output replaces
+// it once the scaffold runs.
 func (m hooksModel) selectedHookContent(idx int) string {
 	var b strings.Builder
 	if idx < 0 || idx >= len(m.hooks) {
@@ -174,7 +170,7 @@ func (m hooksModel) selectedHookContent(idx int) string {
 		return b.String()
 	}
 	h := m.hooks[idx]
-	header := fmt.Sprintf("Hook %d — %s", idx+1, h.Phase)
+	header := fmt.Sprintf("Hook %d: %s", idx+1, h.Phase)
 	if h.IsFile {
 		data, err := os.ReadFile(h.File)
 		body := ""
@@ -203,8 +199,8 @@ func (m hooksModel) update(msg tea.Msg) (hooksModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case runLineMsg:
 		m.output += msg.text
-		// Cap accumulated output so wrapping stays cheap. The viewport
-		// scrolls to bottom; old lines are naturally out of view.
+		// Cap accumulated output so rewrapping stays cheap; old lines
+		// scroll out of view anyway.
 		if len(m.output) > 16*1024 {
 			if idx := strings.Index(m.output[4096:], "\n"); idx > 0 {
 				m.output = m.output[4096+idx+1:]
@@ -222,9 +218,8 @@ func (m hooksModel) update(msg tea.Msg) (hooksModel, tea.Cmd) {
 			return m, nil
 		}
 		m.output += "\n" + lipgloss.NewStyle().Foreground(theme.StatusInfo).Render("done.")
-		// Mirror the success summary into the pane so the user
-		// sees it before quitting. runNew reprints the same two
-		// lines on the restored terminal once they press q.
+		// Mirror the success summary in the pane; runNew reprints the
+		// same lines on the restored terminal after quit.
 		m.output += "\n"
 		m.output += lipgloss.NewStyle().Foreground(theme.StatusSuccess).Render(
 			fmt.Sprintf("INFO created %s at %s", m.name, m.dest))
@@ -307,9 +302,7 @@ func (m hooksModel) update(msg tea.Msg) (hooksModel, tea.Cmd) {
 	return m, nil
 }
 
-// submitModal resolves the current modal choice. 0 = Run (full
-// scaffold with hooks), 1 = Skip (scaffold without hooks), 2 = Cancel
-// (dismiss the modal and do nothing).
+// submitModal resolves the modal choice: Run, Skip, or dismiss.
 func (m hooksModel) submitModal() (hooksModel, tea.Cmd) {
 	m.modalOpen = false
 	switch m.modalChoice {
@@ -322,9 +315,8 @@ func (m hooksModel) submitModal() (hooksModel, tea.Cmd) {
 	}
 }
 
-// startRun executes the full scaffold (pre → render → post) for real,
-// streaming hook output into the right pane. skip runs the scaffold
-// with hooks disabled.
+// startRun executes the full scaffold, streaming hook output into the
+// right pane. skip disables hook execution but still renders files.
 func (m hooksModel) startRun(skip bool) (hooksModel, tea.Cmd) {
 	m.running = true
 	m.modalOpen = false
@@ -420,7 +412,7 @@ func (m hooksModel) resize(width, height int) hooksModel {
 
 func (m hooksModel) view() tea.View {
 	s := m.styles
-	title := gradientText("Spin  Hooks Review — "+m.name, theme.AccentAlt, theme.Accent)
+	title := gradientText("Spin  Hooks Review: "+m.name, theme.AccentAlt, theme.Accent)
 	header := m.appBoundaryView(title)
 
 	listStyle := lipgloss.NewStyle().
@@ -469,14 +461,10 @@ func (m hooksModel) view() tea.View {
 
 	inner := header + "\n" + body + "\n" + footerView
 	if m.modalOpen {
-		// Size the canvas to the rendered base, not to m.width. m.width
-		// is the inner width (the Base style's 5-column horizontal frame
-		// is already subtracted in newTUIStyles), but base = s.Base.Render(inner)
-		// adds that frame back. A m.width-sized canvas would clip base's
-		// right edge, erasing the view pane's right border on the rows
-		// the modal overlaps. Matching the canvas to base keeps every
-		// base cell (the border included) and lets the modal layer draw
-		// centered on top without erasing anything outside its own box.
+		// Size the canvas to the rendered base rather than m.width:
+		// base re-adds the frame that m.width excludes, and a wider
+		// canvas would clip the view pane's right border under the
+		// modal.
 		base := s.Base.Render(inner)
 		modal := m.modalBox()
 		canvas := lipgloss.NewCanvas(lipgloss.Width(base), lipgloss.Height(base))
@@ -485,9 +473,6 @@ func (m hooksModel) view() tea.View {
 		boxH := lipgloss.Height(modal)
 		x := max((cw-boxW)/2, 0)
 		y := max((ch-boxH)/2, 0)
-		// The Compositor flattens the layer tree and respects each
-		// layer's x/y offset, so the modal box draws centered on top
-		// of the hooks view.
 		comp := lipgloss.NewCompositor(
 			lipgloss.NewLayer(base),
 			lipgloss.NewLayer(modal).X(x).Y(y).Z(1),
@@ -504,11 +489,8 @@ func (m hooksModel) view() tea.View {
 	return v
 }
 
-// modalBox renders the Run/Skip/Cancel confirmation dialog content (the
-// box itself). The caller composites it over the hooks view using a
-// canvas and a foreground layer so it appears centered and on top. The
-// dialog only asks whether to run the template's hooks; it does not
-// repeat the hook list (that is already visible in the left pane).
+// modalBox renders the Run/Skip/Cancel dialog content; the caller
+// composites it centered over the hooks view.
 func (m hooksModel) modalBox() string {
 	var b strings.Builder
 	name := m.tpl.Name

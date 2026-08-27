@@ -5,10 +5,7 @@ import (
 	"testing"
 )
 
-// TestValue_RoundTrip verifies that for every param type, building
-// a Value, calling Apply(), and reading Value() back yields the
-// same value. This is the round-trip contract that the
-// Apply/Value methods must satisfy.
+// TestValue_RoundTrip verifies that for every param type, building a Value, calling Apply(), and reading Value()
 func TestValue_RoundTrip(t *testing.T) {
 	cases := []struct {
 		name string
@@ -35,10 +32,7 @@ func TestValue_RoundTrip(t *testing.T) {
 	}
 }
 
-// TestOrPrompt_FallsBackToName verifies the orPrompt helper
-// returns the prompt when set, else the name. This is the
-// contract that keeps huh titles sensible when a template
-// author forgets to set a prompt.
+// TestOrPrompt_FallsBackToName verifies the orPrompt helper returns the prompt when set, else the name.
 func TestOrPrompt_FallsBackToName(t *testing.T) {
 	cases := []struct {
 		name, prompt, want string
@@ -55,11 +49,7 @@ func TestOrPrompt_FallsBackToName(t *testing.T) {
 	}
 }
 
-// TestTextParam_DefaultEmptyString verifies the text param's
-// HuhField placeholder behaviour: when def is non-empty it is
-// used as a placeholder, when def is empty the placeholder is
-// not set. The huh form test would be flaky; we exercise the
-// pure logic via the field construction method.
+// TestTextParam_DefaultEmptyString verifies empty defaults leave the placeholder unset.
 func TestTextParam_DefaultEmptyString(t *testing.T) {
 	tp := NewText("n", "p", "")
 	if tp.Default() != "" {
@@ -71,9 +61,7 @@ func TestTextParam_DefaultEmptyString(t *testing.T) {
 	}
 }
 
-// TestNumberParam_DefaultZero verifies the number param's
-// default-zero round-trip: a default of 0 with no min/max
-// should accept any int via Apply.
+// TestNumberParam_DefaultZero verifies the number param's default-zero round-trip: a default of 0 with no min/max.
 func TestNumberParam_DefaultZero(t *testing.T) {
 	np := NewNumber("port", "Port", 0, nil, nil)
 	if np.Default() != 0 {
@@ -85,10 +73,7 @@ func TestNumberParam_DefaultZero(t *testing.T) {
 	}
 }
 
-// TestMultiSelectParam_DefaultNil verifies a nil default doesn't
-// panic; the form should just open with no options selected.
-// (Default() returns the stored []string; a nil default
-// round-trips to an empty slice -- both are falsy in templates.)
+// TestMultiSelectParam_DefaultNil verifies a nil default doesn't panic; the form should just open with no options.
 func TestMultiSelectParam_DefaultNil(t *testing.T) {
 	mp := NewMultiSelect("features", "Features", []string{"a", "b"}, nil)
 	if d, ok := mp.Default().([]string); !ok || len(d) != 0 {

@@ -35,9 +35,7 @@ func init() {
 	rootCmd.AddCommand(initCmd)
 }
 
-// initFileTemplate is the body of the placeholder _base/file.txt
-// the user can edit. Kept short and obvious so it doesn't look
-// like a real example of the templating language.
+// initFileTemplate is the placeholder _base/file.txt body.
 const initFileTemplate = `# {{.name}}
 
 This file is rendered by Go text/template against the resolved
@@ -96,10 +94,9 @@ spin new my-project --template .
   overwritten.
 `
 
-// runInit is the RunE for `spin init`. Creates <dir>/<name>/
-// with spin.toml, _base/file.txt, and a README.md. Errors out
-// if the destination already exists (the user can pick another
-// name or remove the dir first).
+// runInit implements `spin init`: it creates <dir>/<name>/ with a
+// starter spin.toml, _base/, and README, refusing to overwrite an
+// existing directory.
 func runInit(cmd *cobra.Command, args []string) error {
 	name := args[0]
 	if name == "" {
@@ -119,9 +116,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	}
 	dest := filepath.Join(parent, name)
 
-	// Refuse to overwrite an existing directory. Users with intent
-	// to overwrite can `rm -rf` and re-run; we don't want a typo
-	// to clobber a real template.
+	// Refuse to overwrite: a typo must not clobber a real template.
 	if _, err := os.Stat(dest); err == nil {
 		return fmt.Errorf("%s already exists; pick a different name or remove it first", dest)
 	} else if !os.IsNotExist(err) {
@@ -139,9 +134,6 @@ func runInit(cmd *cobra.Command, args []string) error {
 	}
 	for rel, body := range files {
 		full := filepath.Join(dest, rel)
-		// Ensure parent dir exists for nested entries (we only
-		// have _base/ today, but this keeps the loop safe if
-		// the manifest is extended).
 		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
 			return fmt.Errorf("mkdir %s: %v", filepath.Dir(full), err)
 		}
@@ -150,9 +142,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// And `spin add <dest>` so the user can use --template <name>
-	// immediately. We do this LAST so a partial init doesn't
-	// leave a broken pin.
+	// Pin last so a partial init never leaves a broken pin.
 	_ = tryAutoPin(cmd.Context(), name, dest)
 
 	printSuccess("created template %q at %s", name, dest)
@@ -191,9 +181,8 @@ func initSpinToml(name string) string {
 	return b.String()
 }
 
-// tryAutoPin runs `spin add <dest>` so the freshly created template
-// is immediately usable as `--template <name>`. Errors are best-effort:
-// if pinning fails we print the manual command instead of failing init.
+// tryAutoPin pins the new template so `--template <name>` works right
+// away. Failures are best-effort; the manual command is printed instead.
 func tryAutoPin(ctx context.Context, name, dest string) error {
 	client := registry.New()
 	pinned, err := client.Add(ctx, dest)

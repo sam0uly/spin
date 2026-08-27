@@ -10,10 +10,7 @@ import (
 	"github.com/sam0uly/spin/internal/template"
 )
 
-// tplWithParams builds an in-memory *template.Template with the
-// given params pre-loaded. We don't need a real _base/ or git
-// origin for these tests; we only exercise the param-flag parsing
-// and coercion logic that runs before the form/render.
+// tplWithParams builds an in-memory *template.Template with the given params pre-loaded.
 func tplWithParams(t *testing.T, specs map[string]params.Spec) *template.Template {
 	t.Helper()
 	return &template.Template{
@@ -256,9 +253,7 @@ func TestApplyParamFlags_Happy(t *testing.T) {
 	}
 }
 
-// TestApplyParamFlags_UnknownKey verifies an unknown key errors
-// out and the error mentions BOTH the bad entry and the list of
-// known keys (so the user can fix it without a second run).
+// TestApplyParamFlags_UnknownKey names both the offending entry and known keys.
 func TestApplyParamFlags_UnknownKey(t *testing.T) {
 	tpl := tplWithParams(t, map[string]params.Spec{
 		"port": {Type: params.TypeNumber},
@@ -276,9 +271,7 @@ func TestApplyParamFlags_UnknownKey(t *testing.T) {
 	}
 }
 
-// TestApplyParamFlags_MalformedEntry verifies `--param=foo` (no
-// `=`) and `--param==8080` (empty key) produce clear errors
-// without crashing the run.
+// TestApplyParamFlags_MalformedEntry verifies `--param=foo` (no `=`) and `--param==8080` (empty key) produce.
 func TestApplyParamFlags_MalformedEntry(t *testing.T) {
 	tpl := tplWithParams(t, map[string]params.Spec{
 		"port": {Type: params.TypeNumber},
@@ -293,10 +286,7 @@ func TestApplyParamFlags_MalformedEntry(t *testing.T) {
 	}
 }
 
-// TestApplyParamFlags_NumberOutOfRange verifies the per-spec min/
-// max bounds from spin.toml are enforced at --param parse time,
-// not just by the huh form. CI users should never see a render
-// failure for a number their template would have rejected.
+// TestApplyParamFlags_NumberOutOfRange verifies the per-spec min/ max bounds from spin.
 func TestApplyParamFlags_NumberOutOfRange(t *testing.T) {
 	min, max := 1, 10
 	tpl := tplWithParams(t, map[string]params.Spec{
@@ -313,9 +303,7 @@ func TestApplyParamFlags_NumberOutOfRange(t *testing.T) {
 	}
 }
 
-// TestApplyParamFlags_BadBoolType verifies that `--param foo=42`
-// on a bool param errors with the same message `--print-params`
-// users would see.
+// TestApplyParamFlags_BadBoolType verifies that `--param foo=42` on a bool param errors with the same message.
 func TestApplyParamFlags_BadBoolType(t *testing.T) {
 	tpl := tplWithParams(t, map[string]params.Spec{
 		"verbose": {Type: params.TypeBool},
@@ -344,9 +332,7 @@ func TestJoinKnownParams(t *testing.T) {
 	}
 }
 
-// TestParamFlag_HelpText verifies the flag's Usage string appears
-// in `spin new --help`, so users can discover --param without
-// reading the README.
+// TestParamFlag_HelpText verifies the flag's Usage string appears in `spin new --help`, so users can discover.
 func TestParamFlag_HelpText(t *testing.T) {
 	out := runSpin(t, "new", "--help")
 	if !strings.Contains(string(out), "--param") {

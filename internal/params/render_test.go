@@ -4,11 +4,7 @@ import (
 	"testing"
 )
 
-// TestRenderStr verifies that prompt/default strings are rendered as
-// Go templates against the available values: bare strings pass
-// through, {{ .x }} interpolates, the shared helpers (snake_case,
-// upper, ...) work, and malformed input falls back to the raw string
-// instead of erroring.
+// TestRenderStr verifies that prompt/default strings are rendered as Go templates against the available values:.
 func TestRenderStr(t *testing.T) {
 	values := map[string]any{
 		"name":         "my-app",
@@ -37,9 +33,7 @@ func TestRenderStr(t *testing.T) {
 	}
 }
 
-// TestTextParam_TemplatedDefault verifies that a text param whose
-// default is a template string is resolved against the values map by
-// SetDefault, so `default = "{{ .name }}"` yields the project name.
+// TestTextParam_TemplatedDefault verifies that a text param whose default is a template string is resolved.
 func TestTextParam_TemplatedDefault(t *testing.T) {
 	p := NewText("module", "Module name", "{{ .name }}")
 	p.SetDefault(map[string]any{"name": "my-app"})

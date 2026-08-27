@@ -6,12 +6,7 @@ import (
 	"github.com/sam0uly/spin/internal/params"
 )
 
-// TestResolveForm_BuiltinsSeededAndCopiedThrough verifies the
-// SSOT contract between the TTY (runNewTUI) and non-TTY
-// (ResolveForm) paths: builtins (name, project_name) supplied up
-// front win over a param's own default, and builtins that are not
-// backed by a param are copied through to the result so templates
-// referencing {{ .project_name }} still render.
+// TestResolveForm_BuiltinsSeededAndCopiedThrough checks values seeded into ResolveForm flow back out.
 func TestResolveForm_BuiltinsSeededAndCopiedThrough(t *testing.T) {
 	tpl := &Template{
 		SpinToml: &SpinToml{
@@ -40,9 +35,7 @@ func TestResolveForm_BuiltinsSeededAndCopiedThrough(t *testing.T) {
 	}
 }
 
-// TestResolveForm_TemplatedDefault verifies that a param default
-// written as a template string is rendered against the available
-// values during non-interactive resolution.
+// TestResolveForm_TemplatedDefault verifies that a param default written as a template string is rendered against.
 func TestResolveForm_TemplatedDefault(t *testing.T) {
 	tpl := &Template{
 		SpinToml: &SpinToml{
@@ -60,9 +53,7 @@ func TestResolveForm_TemplatedDefault(t *testing.T) {
 	}
 }
 
-// TestResolveForm_SelectDefaultOutsideOptions verifies that a select
-// default rendered outside the option list is rejected in the
-// non-interactive path (huh's per-field Validate does not run there).
+// TestResolveForm_SelectDefaultOutsideOptions verifies an off-list select default is rejected.
 func TestResolveForm_SelectDefaultOutsideOptions(t *testing.T) {
 	tpl := &Template{
 		SpinToml: &SpinToml{

@@ -41,17 +41,18 @@ type Param interface {
 	SetDefault(values map[string]any)
 	Apply(v Value)
 	Value() Value
-	// HuhField builds the huh field for this param. The form runner
-	// writes the result back via Apply(). values are the currently
-	// known template values, used to render the param's prompt and
-	// default (e.g. `prompt = "Name for {{ .name }}"`).
+
+	// HuhField builds the huh field for this param; the form runner
+	// writes the result back via Apply. values are the currently known
+	// template values, available to templated prompts and defaults.
 	HuhField(values map[string]any) huh.Field
-	// String returns a one-line summary, used by `spin new --print-params`.
+
+	// String returns a one-line summary for --print-params.
 	String() string
 }
 
-// Spec is the raw shape we accept from a parsed spin.toml block.
-// The parse step turns a Spec into a concrete Param.
+// Spec is the raw shape parsed from a spin.toml params block; the
+// parse step turns it into a concrete Param.
 type Spec struct {
 	Type    Type     `toml:"type"`
 	Prompt  string   `toml:"prompt"`

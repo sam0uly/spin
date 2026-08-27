@@ -6,6 +6,7 @@ import (
 	"charm.land/huh/v2"
 )
 
+// TextareaParam is a multi-line text input with no character limit.
 type TextareaParam struct {
 	name   string
 	prompt string

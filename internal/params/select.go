@@ -7,6 +7,7 @@ import (
 	"charm.land/huh/v2"
 )
 
+// SelectParam is a single-choice prompt over a fixed option list.
 type SelectParam struct {
 	name    string
 	prompt  string

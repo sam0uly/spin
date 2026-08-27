@@ -22,15 +22,7 @@ var (
 	binErr  error
 )
 
-// TestFangStyledHelp verifies that `spin --help` renders with fang
-// styling rather than cobra's plain default.
-//
-// In a non-TTY (pipe) environment, fang suppresses ANSI escape codes
-// but still emits the fang-specific section markers: uppercase
-// "USAGE" / "COMMANDS" / "FLAGS" headers (cobra's plain default uses
-// "Usage:" / "Available Commands:" / "Flags:"). We assert the help
-// mentions the "new" subcommand AND contains at least one fang-style
-// uppercase section marker.
+// TestFangStyledHelp verifies that `spin --help` renders with fang styling rather than cobra's plain default.
 func TestFangStyledHelp(t *testing.T) {
 	out := runSpin(t, "--help")
 
@@ -66,11 +58,7 @@ func TestFangStyledHelp(t *testing.T) {
 	}
 }
 
-// TestFangTTYEmitsANSI confirms fang does emit ANSI when output is a
-// TTY. We allocate a PTY via `script -qc` (Linux) to give fang a real
-// terminal to style. Skipped on platforms without `script` (e.g. some
-// macOS variants), and on systems where `script` can't actually exec
-// the binary (e.g. some Nix sandboxes with restricted /tmp perms).
+// TestFangTTYEmitsANSI confirms fang does emit ANSI when output is a TTY.
 func TestFangTTYEmitsANSI(t *testing.T) {
 	if _, err := exec.LookPath("script"); err != nil {
 		t.Skip("`script` not available; cannot allocate PTY")
@@ -105,11 +93,7 @@ func TestFangTTYEmitsANSI(t *testing.T) {
 	}
 }
 
-// TestUnknownSubcommandSuggestion verifies that a deliberate typo of
-// the `search` subcommand returns non-zero and stderr contains the
-// suggestion `search`. Cobra's `SuggestionsMinimumDistance = 2`
-// applies to subcommand suggestions, which is what the field is
-// actually for in cobra 1.10.x. Fang styles the suggestion.
+// TestUnknownSubcommandSuggestion suggests `search` for a typo'd subcommand.
 func TestUnknownSubcommandSuggestion(t *testing.T) {
 	// Build the typo as a concatenation so misspell does not flag the
 	// intentionally misspelled command string.
@@ -131,9 +115,7 @@ func TestVersionFlag(t *testing.T) {
 	}
 }
 
-// TestRootCmdVersionWiring is a unit test that asserts rootCmd.Version
-// is wired to internal/version.Version (not a hardcoded string).
-// This catches regressions where someone replaces the wiring.
+// TestRootCmdVersionWiring asserts the root command version is wired, not hardcoded.
 func TestRootCmdVersionWiring(t *testing.T) {
 	rc := RootCmd()
 	if rc.Version == "" {
@@ -159,11 +141,7 @@ func TestFangExecuteNoPanic(t *testing.T) {
 	}
 }
 
-// isolateConfig points XDG_CONFIG_HOME at a throwaway dir so any
-// pin/registry writes from this test land in temp space instead of
-// the developer's real ~/.config/spin. Skipped when the test
-// already set XDG_CONFIG_HOME (e.g. via withEmptyPinned to seed a
-// pinned.json it expects the binary to read).
+// isolateConfig points XDG_CONFIG_HOME at a throwaway dir so any pin/registry writes from this test land in temp.
 func isolateConfig(t *testing.T) {
 	t.Helper()
 	if os.Getenv("XDG_CONFIG_HOME") != "" {
@@ -222,9 +200,7 @@ func runSpinExit(t *testing.T, args ...string) ([]byte, int) {
 	return out, exitErr.ExitCode()
 }
 
-// repoRoot returns the absolute path of the spin repo root. The test
-// process CWD may be cmd/ (during `go test ./cmd/...`); we always
-// build from the repo root where main.go + go.mod live.
+// repoRoot returns the absolute path of the spin repo root. The test process CWD may be cmd/ (during `go test ./cmd/.
 func repoRoot(t testing.TB) string {
 	t.Helper()
 	wd, err := os.Getwd()

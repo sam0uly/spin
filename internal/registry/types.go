@@ -1,35 +1,34 @@
 package registry
 
-// Pinned is a locally-pinned template (the result of `spin add user/repo`).
-// LocalPath is the on-disk location of the cloned/copied template,
-// resolved at pin time. Older pin files (pre-v2.0) may have an empty
-// LocalPath; the consumer should fall back to CacheDir/templates/<name>.
+// Pinned is a template saved for offline use by `spin add`. LocalPath
+// is where the copy lives on disk. Old pin files from before v2.0 may
+// have an empty LocalPath; consumers should fall back to
+// CacheDir/templates/<name>.
 type Pinned struct {
 	Name      string `json:"name"`              // "vercel/nextjs-tailwind"
 	Source    string `json:"source"`            // git URL or local path
-	PinnedAt  string `json:"pinned_at"`         // ISO 8601
-	Version   string `json:"version"`           // last-seen registry version
-	LocalPath string `json:"local_path"`        // absolute path on disk (v2.0+)
-	Removed   bool   `json:"removed,omitempty"` // soft-deleted; cache still on disk until --purge
+	PinnedAt  string `json:"pinned_at"`         // ISO 8601 timestamp
+	Version   string `json:"version"`           // version or commit at pin time
+	LocalPath string `json:"local_path"`        // absolute cache path on disk
+	Removed   bool   `json:"removed,omitempty"` // soft-deleted; cache stays until --purge
 }
 
-// RegistryKind enumerates how a registry was sourced.
+// RegistryKind describes how a registry was sourced.
 type RegistryKind string
 
 const (
-	// KindGit is a registry cloned from a git URL. Refresh does
-	// `git fetch + reset` against the upstream.
+	// KindGit is a registry cloned from a git URL. Refresh runs git
+	// fetch and reset against the upstream.
 	KindGit RegistryKind = "git"
-	// KindLocal is a registry symlinked (or copied) from a local
-	// path. Refresh is a no-op; the user's filesystem is the source
-	// of truth.
+	// KindLocal is a registry symlinked from a local path. Refresh is
+	// a no-op because the user's filesystem is the source of truth.
 	KindLocal RegistryKind = "local"
 )
 
-// Registry is one registered registry entry. Alias is the user-facing
-// shorthand (`spin add <alias>/<id>`); Source is the original spec
-// passed to `spin registry add`; Path is where the registry lives on
-// disk under CacheDir/registries/<alias>/.
+// Registry is one entry in registries.json. Alias is the shorthand
+// used in `<alias>/<id>` references, Source is the spec given to
+// `spin registry add`, and Path is the on-disk clone or symlink
+// under CacheDir/registries/<alias>.
 type Registry struct {
 	Alias       string       `json:"alias"`
 	Source      string       `json:"source"`
@@ -39,15 +38,13 @@ type Registry struct {
 	LastUpdated string       `json:"last_updated,omitempty"`
 }
 
-// RegistriesConfig is the on-disk shape of registries.json. It is a
-// thin wrapper so future fields (default alias, schema version) can
-// be added without rewriting every consumer.
+// RegistriesConfig is the on-disk shape of registries.json.
 type RegistriesConfig struct {
 	Registries []Registry `json:"registries"`
 }
 
-// RegistryMetadata is the registry.toml schema. The id/name are
-// required; the rest is documentation. See spin-registry.md.
+// RegistryMetadata is the registry.toml schema. ID and Name are
+// required; the rest is documentation for `spin search` output.
 type RegistryMetadata struct {
 	ID          string `toml:"id"`
 	Name        string `toml:"name"`
@@ -57,10 +54,9 @@ type RegistryMetadata struct {
 	License     string `toml:"license"`
 }
 
-// TemplateMetadata is the per-templates/*.toml schema. Id is the
-// short name users type in `<alias>/<id>`; Name is the human label;
-// Source is the git URL or local path the existing template loader
-// can already consume (or another `<alias>/<id>` to chain).
+// TemplateMetadata is the schema of one templates/*.toml file inside
+// a registry. ID is the short name users type in `<alias>/<id>`, and
+// Source is the git URL or local path the template loader consumes.
 type TemplateMetadata struct {
 	ID          string   `toml:"id"`
 	Name        string   `toml:"name"`
@@ -76,9 +72,8 @@ type TemplateMetadata struct {
 	UpdatedAt   string   `toml:"updated_at"`
 }
 
-// TemplateEntry is one template surfaced to `spin search`: the
-// registry's alias plus the template metadata, so callers can render
-// `<alias>/<id>` directly.
+// TemplateEntry is one search result: a registry alias plus its
+// template metadata.
 type TemplateEntry struct {
 	Alias       string
 	ID          string

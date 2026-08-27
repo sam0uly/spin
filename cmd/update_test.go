@@ -10,9 +10,7 @@ import (
 	"github.com/sam0uly/spin/internal/registry"
 )
 
-// makeFixtureLocalSource creates a small on-disk "template" that
-// can be used as a local-path pin source. The content is fixed
-// so we can assert on it after refresh.
+// makeFixtureLocalSource creates a small on-disk "template" that can be used as a local-path pin source.
 func makeFixtureLocalSource(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -28,11 +26,7 @@ func makeFixtureLocalSource(t *testing.T) string {
 	return dir
 }
 
-// TestRefresh_LocalPath verifies Refresh re-copies the on-disk
-// source into the pin's LocalPath. Edit the source AFTER the
-// initial pin, call Refresh, and assert the cache picked up the
-// new file. This is the happy path of `spin update` for a
-// local-path pin.
+// TestRefresh_LocalPath verifies Refresh re-copies the on-disk source into the pin's LocalPath.
 func TestRefresh_LocalPath(t *testing.T) {
 	isolateConfig(t)
 	src := makeFixtureLocalSource(t)
@@ -81,9 +75,7 @@ func TestRefresh_LocalPath(t *testing.T) {
 	}
 }
 
-// TestRefresh_NoLocalPath verifies Refresh fails cleanly when the
-// pin has no LocalPath (e.g. legacy pin files). The error
-// mentions `spin add` so the user knows the fix.
+// TestRefresh_NoLocalPath verifies Refresh fails cleanly when the pin has no LocalPath (e.g. legacy pin files).
 func TestRefresh_NoLocalPath(t *testing.T) {
 	isolateConfig(t)
 	c := registry.New()
@@ -99,15 +91,7 @@ func TestRefresh_NoLocalPath(t *testing.T) {
 	}
 }
 
-// TestRefresh_MissingOnDisk verifies Refresh refuses to half-clone
-// when the cache dir has been deleted out from under the pin. The
-// user is told to re-add.
-//
-// In production the LocalPath is moved aside to a .bak by
-// refreshOne BEFORE Refresh runs, so a missing LocalPath is the
-// normal case during `spin update` (not an error). We exercise
-// the "no LocalPath" branch (covered by TestRefresh_NoLocalPath)
-// here for completeness.
+// TestRefresh_MissingOnDisk checks a missing cache dir cleanly.
 func TestRefresh_MissingOnDisk(t *testing.T) {
 	isolateConfig(t)
 	c := registry.New()
@@ -130,14 +114,7 @@ func TestRefresh_MissingOnDisk(t *testing.T) {
 	}
 }
 
-// TestRefreshOne_RollsBackOnFailure verifies that when the
-// refresh fails, the old on-disk cache is moved back into place
-// and the pin record is left untouched.
-//
-// We trigger a failure by passing a Pin whose source is
-// local-path but the source dir has been deleted. Refresh will
-// fail on the os.Stat(source) check; refreshOne should roll the
-// .bak back into place.
+// TestRefreshOne_RollsBackOnFailure rolls the .bak snapshot back on refresh failure.
 func TestRefreshOne_RollsBackOnFailure(t *testing.T) {
 	isolateConfig(t)
 	src := makeFixtureLocalSource(t)
@@ -189,9 +166,7 @@ func TestRefreshOne_RollsBackOnFailure(t *testing.T) {
 	}
 }
 
-// TestRefreshOne_SuccessClearsBackup verifies that a successful
-// refresh leaves the cache with the new content and the .bak dir
-// is gone.
+// TestRefreshOne_SuccessClearsBackup removes the .bak snapshot after a successful refresh.
 func TestRefreshOne_SuccessClearsBackup(t *testing.T) {
 	isolateConfig(t)
 	src := makeFixtureLocalSource(t)
@@ -227,9 +202,7 @@ func TestRefreshOne_SuccessClearsBackup(t *testing.T) {
 	}
 }
 
-// TestBackupPath_Timestamped verifies backupPath returns
-// LocalPath + ".bak-<unix-ts>". A future caller (UpdateFlow)
-// depends on this exact format to recognise leftover backups.
+// TestBackupPath_Timestamped verifies backupPath returns LocalPath + ".bak-<unix-ts>".
 func TestBackupPath_Timestamped(t *testing.T) {
 	got, ok := backupPath("/tmp/foo")
 	if !ok {

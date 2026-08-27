@@ -36,8 +36,8 @@ import (
 type SpinToml struct {
 	Name           string                 `toml:"name"`
 	Description    string                 `toml:"description"`
-	Type           string                 `toml:"type"`     // "tui" | "cli" | "lib" | ...
-	Language       string                 `toml:"language"` // "go" | "rust" | "ts" | ...
+	Type           string                 `toml:"type"`     // e.g. "tui", "cli"
+	Language       string                 `toml:"language"` // e.g. "go", "rust"
 	Author         Author                 `toml:"author"`
 	License        string                 `toml:"license"`
 	Repository     string                 `toml:"repository"`
@@ -59,30 +59,23 @@ type IncludeRule struct {
 	If   string `toml:"if"`
 }
 
-// PreStep is one command in the pre-scaffold hook. It runs after params
-// are resolved but before files are rendered, via sh -c in the project
-// root. Steps execute in order; the hook stops on the first failure.
+// PreStep is one pre-scaffold command. It runs after params resolve
+// but before files render, via sh -c in the project root. Steps run
+// in order and stop at the first failure.
 type PreStep struct {
 	Run string `toml:"run"`
 }
 
-// Author identifies the template creator. All fields are optional;
-// templates only need to fill what they want to publish.
+// Author identifies the template creator. All fields are optional.
 type Author struct {
 	Name  string `toml:"name"`
 	Email string `toml:"email"`
 	URL   string `toml:"url"`
 }
 
-// PostStep is one command in the post-scaffold hook. The shell command
-// is templated against the resolved param + flag values, then run via
-// `sh -c` in the project root. Steps execute in order; the hook
-// stops on the first failure.
-//
-// This is intentionally a list, not a single string -- it matches the
-// shape npm scripts, Taskfile.yml, and Just converged on, and gives
-// a clean path to per-step metadata (env, cwd, on_error) without a
-// breaking schema change.
+// PostStep is one post-scaffold command, templated against the
+// resolved values and run via sh -c in the project root. Steps run
+// in order and stop at the first failure.
 type PostStep struct {
 	Run string `toml:"run"`
 }
@@ -96,6 +89,7 @@ func ParseSpinToml(path string) (*SpinToml, error) {
 	return ParseSpinTomlBytes(b)
 }
 
+// ParseSpinTomlBytes parses a spin.toml document. Name is required.
 func ParseSpinTomlBytes(b []byte) (*SpinToml, error) {
 	st := &SpinToml{Params: map[string]params.Spec{}}
 	if err := parseTOML(b, st); err != nil {

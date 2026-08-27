@@ -20,6 +20,8 @@ func IsGitURL(s string) bool {
 	return false
 }
 
+// IsShorthand reports whether s looks like a two-segment `a/b`
+// shorthand such as "user/repo" or "alias/id".
 func IsShorthand(s string) bool {
 	if s == "" || IsLocalPath(s) || IsGitURL(s) {
 		return false

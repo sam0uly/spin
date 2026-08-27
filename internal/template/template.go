@@ -16,19 +16,19 @@ import (
 
 // Template is a loaded external template, ready to render.
 type Template struct {
-	Name        string    // dir name, e.g. "rust-cli"
-	Source      string    // local path on disk (post-clone)
+	Name        string    // directory name, e.g. "rust-cli"
+	Source      string    // local path on disk, post-clone
 	Repo        string    // git URL, if any
-	Spec        string    // original spec the user typed (may differ from Repo/Source when resolved via a registry shorthand)
+	Spec        string    // original spec the user typed
 	SpinToml    *SpinToml // parsed spin.toml
 	BaseDir     string    // _base/ inside Source
-	PreHookDir  string    // _pre/ inside Source (optional)
-	PostHookDir string    // _post/ inside Source (optional)
+	PreHookDir  string    // optional _pre/ inside Source
+	PostHookDir string    // optional _post/ inside Source
 }
 
-// A valid template has spin.toml and _base/.
+// Detect loads the template rooted at dir. A valid template contains
+// spin.toml and _base/.
 func Detect(dir string) (*Template, error) {
-	// Expand ~ to home so registry sources and CLI args work uniformly.
 	if strings.HasPrefix(dir, "~/") {
 		h, err := os.UserHomeDir()
 		if err != nil {
@@ -58,25 +58,15 @@ func Detect(dir string) (*Template, error) {
 	}, nil
 }
 
-// Render walks the template's _base/ tree, rendering each .tmpl file
-// against the supplied values. The output is a rel-path → bytes map.
-//
-// values is the resolved param + flag map. Keys ending in `.Name` are
-// also available as `.Name` for backwards compat with the existing
-// scaffold package.
-//
-// Files whose path (relative to _base/, with the .tmpl extension
-// stripped) matches any glob in t.SpinToml.Exclude are skipped  -
-// they never reach the output tree. This is how templates opt out
-// of files (e.g. a CI badge, a contributor list) that should stay
-// out of the generated project.
-//
-// If t.SpinToml.Include rules exist, only files matching at least one
-// true rule are included. A rule with an empty If always includes.
+// Render walks the template's _base/ tree and renders each .tmpl file
+// against values. It returns a map of output-relative paths to bytes;
+// non-templated files are copied verbatim. Paths matching any glob in
+// SpinToml.Exclude are skipped entirely. When SpinToml.Include rules
+// exist, a file is emitted only if it matches a rule whose If template
+// renders truthy; an empty If always matches.
 func (t *Template) Render(values map[string]any) (map[string][]byte, error) {
 	out := map[string][]byte{}
-	// Build the template helpers once and reuse them for every file
-	// and every [[include]] rule in this pass.
+	// Shared helpers for every file and include rule in this pass.
 	funcs := params.FuncMap()
 	err := filepath.Walk(t.BaseDir, func(path string, info os.FileInfo, walkErr error) error {
 		if walkErr != nil {
@@ -129,20 +119,15 @@ func (t *Template) Render(values map[string]any) (map[string][]byte, error) {
 	return out, nil
 }
 
-// licenseFileNames are the output names that count as "the template
-// already ships a license file". A generated LICENSE never overwrites
-// any of them.
+// licenseFileNames are the output names that count as the template
+// already shipping a license. A generated LICENSE never overwrites them.
 var licenseFileNames = []string{"LICENSE", "LICENSE.txt", "LICENSE.md", "COPYING", "COPYING.txt"}
 
-// appendLicense adds a LICENSE file to the rendered output when the
-// template opted into built-in licensing. The resolved `license` value
-// (from a `type = "license"` param) must be a known built-in license;
-// empty, "None", "Proprietary", and unknown values never produce a
-// file. An existing license-named file in the output is never
-// overwritten. The copyright holder comes from the optional
-// `copyright_holder` value; when absent, the SPDX token is left in
-// place so the file never claims an ownership it was not given. The
-// year is always the current year.
+// appendLicense adds a LICENSE to the rendered output when the template
+// opted into built-in licensing via a `type = "license"` param. Unknown,
+// empty, or "None" values produce nothing. An existing license-named
+// file is never overwritten, and without a copyright_holder value the
+// SPDX holder token is left in place rather than guessed.
 func (t *Template) appendLicense(out map[string][]byte, values map[string]any) error {
 	id, _ := values["license"].(string)
 	if !licenses.IsKnown(id) {
@@ -161,7 +146,7 @@ func (t *Template) appendLicense(out map[string][]byte, values map[string]any) e
 }
 
 // hasLicenseFile reports whether the output already contains a
-// license-named file (case-insensitive).
+// license-named file.
 func hasLicenseFile(out map[string][]byte) bool {
 	for name := range out {
 		lower := strings.ToLower(name)
@@ -174,11 +159,10 @@ func hasLicenseFile(out map[string][]byte) bool {
 	return false
 }
 
-// shouldInclude evaluates the [[include]] rules for a path. If no
-// rules exist, the file is included. Otherwise the path must match
-// at least one rule whose If template renders truthy. Directories
-// with no matching true rule return skipDir=true so the walk can
-// prune the subtree.
+// shouldInclude evaluates the [[include]] rules for one path. With no
+// rules everything is included. Otherwise the path must match a rule
+// whose If renders truthy. skipDir tells the walker it can prune a
+// directory whose subtree cannot match either.
 func (t *Template) shouldInclude(rel, candidate string, isDir bool, values map[string]any, funcs template.FuncMap) (include bool, skipDir bool, err error) {
 	if len(t.SpinToml.Include) == 0 {
 		return true, false, nil
@@ -229,15 +213,13 @@ func matchIncludeRule(rule IncludeRule, rel, candidate string) (bool, error) {
 	return false, nil
 }
 
-// matchGlob reports whether name matches pattern. It supports ** to
-// match any number of directories, plus single-segment * like
-// filepath.Match. Patterns without ** fall back to filepath.Match.
+// matchGlob reports whether name matches pattern, supporting ** for
+// any number of directories on top of filepath.Match semantics.
 func matchGlob(pattern, name string) (bool, error) {
 	if !strings.Contains(pattern, "**") {
 		return filepath.Match(pattern, name)
 	}
 	parts := strings.Split(pattern, "**")
-	// pattern starts with **
 	if parts[0] == "" {
 		rest := strings.TrimPrefix(strings.Join(parts[1:], "**"), "/")
 		if rest == "" {
@@ -245,12 +227,10 @@ func matchGlob(pattern, name string) (bool, error) {
 		}
 		return matchAnySuffix(name, rest), nil
 	}
-	// pattern ends with **
 	if parts[len(parts)-1] == "" {
 		prefix := strings.TrimSuffix(parts[0], "/")
 		return strings.HasPrefix(name, prefix), nil
 	}
-	// prefix/**/suffix
 	prefix := parts[0]
 	suffix := strings.Join(parts[1:], "**")
 	if !strings.HasPrefix(name, prefix) {
@@ -310,8 +290,7 @@ func isExcluded(path string, patterns []string) bool {
 	return false
 }
 
-// RenderTo writes the rendered files to dest. Same path-traversal
-// guard as scaffold.emit.
+// RenderTo renders the template and writes the files to dest.
 func (t *Template) RenderTo(ctx context.Context, dest string, values map[string]any) error {
 	files, err := t.Render(values)
 	if err != nil {
@@ -320,17 +299,11 @@ func (t *Template) RenderTo(ctx context.Context, dest string, values map[string]
 	return writeFiles(ctx, dest, files)
 }
 
-// RenderToWithPost is the full v2.0 template pipeline:
-//  1. Render the template to an in-memory file map.
-//  2. Write the files to dest (path-traversal-safe via writeFiles).
-//  3. Run the post-hook (if any) in dest.
-//  4. Walk dest and delete every spin.toml file found (TPL-16:
-//     "spin.toml is deleted from the output after a successful
-//     render").
-//
-// Returns the first non-nil error encountered. The post-hook and
-// the spin.toml deletion are best-effort cleanup operations: if
-// the post-hook fails, the spin.toml deletion still runs.
+// RenderToWithPost runs the full pipeline: copy hook assets, run the
+// pre-hook, render and write files, then run the post-hook. Finally
+// it deletes every spin.toml under dest so the manifest never ships
+// in the generated project. The post-hook failing does not skip the
+// spin.toml cleanup.
 func (t *Template) RenderToWithPost(ctx context.Context, dest string, values map[string]any, opts HookOptions) error {
 	if err := os.MkdirAll(dest, 0o755); err != nil {
 		return fmt.Errorf("mkdir %q: %w", dest, err)
@@ -351,8 +324,7 @@ func (t *Template) RenderToWithPost(ctx context.Context, dest string, values map
 	if err := t.copyPostDir(ctx, dest); err != nil {
 		return err
 	}
-	// Post-hook: best-effort. Even if it fails, we still attempt
-	// to delete spin.toml from the output (TPL-16).
+	// Best-effort: clean up spin.toml even when the post-hook failed.
 	hookErr := RunPostHook(ctx, t, values, dest, opts)
 	deleteErr := deleteSpinToml(ctx, dest)
 	if hookErr != nil {
@@ -361,11 +333,9 @@ func (t *Template) RenderToWithPost(ctx context.Context, dest string, values map
 	return deleteErr
 }
 
-// deleteSpinToml walks dest and removes any file named spin.toml.
-// TPL-16 specifies that the manifest must not end up in the user's
-// project; a defensive walk handles the case where a template
-// accidentally included a spin.toml in _base/ (instead of relying
-// on the manifest never being rendered in the first place).
+// deleteSpinToml removes every file named spin.toml under dest. This
+// is a defensive walk: templates should not ship the manifest in
+// _base/, but if one does it must not reach the user's project.
 func deleteSpinToml(ctx context.Context, dest string) error {
 	return filepath.Walk(dest, func(path string, info os.FileInfo, walkErr error) error {
 		if err := ctx.Err(); err != nil {
@@ -384,23 +354,21 @@ func deleteSpinToml(ctx context.Context, dest string) error {
 	})
 }
 
-// copyPreDir copies the template's optional _pre/ directory into
-// dest/_pre/ so pre-hooks can reference scripts or assets before the
-// main _base/ files are written.
+// copyPreDir copies the template's optional _pre/ assets into dest so
+// pre-hooks can reference them.
 func (t *Template) copyPreDir(ctx context.Context, dest string) error {
 	return copyHookAssets(ctx, t.PreHookDir, filepath.Join(dest, "_pre"))
 }
 
-// copyPostDir copies the template's optional _post/ directory into
-// dest/_post/ so post-hooks can reference scripts or assets stored
-// alongside the template.
+// copyPostDir copies the template's optional _post/ assets into dest
+// so post-hooks can reference them.
 func (t *Template) copyPostDir(ctx context.Context, dest string) error {
 	return copyHookAssets(ctx, t.PostHookDir, filepath.Join(dest, "_post"))
 }
 
-// copyHookAssets copies a hook-asset directory verbatim (no .tmpl
-// rendering). The destination must stay inside destRoot. Missing src
-// is a no-op; any other error is returned.
+// copyHookAssets copies a hook-asset directory verbatim, without
+// rendering. A missing source is a no-op. Targets are checked against
+// destRoot to reject path traversal.
 func copyHookAssets(ctx context.Context, src, destRoot string) error {
 	if src == "" {
 		return nil

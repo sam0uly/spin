@@ -7,9 +7,9 @@ import (
 	"strings"
 )
 
-// HookView is one reviewable hook entry surfaced by the interactive TUI.
-// A hook is either an inline [[pre]]/[[post]] step (Run set, File empty)
-// or a script file discovered in _pre/ or _post/ (File set, IsFile true).
+// HookView is one reviewable hook entry for the interactive TUI: an
+// inline [[pre]]/[[post]] step (Run set) or a script file from _pre/
+// or _post/ (File set, IsFile true).
 type HookView struct {
 	// Phase is "pre" or "post".
 	Phase string

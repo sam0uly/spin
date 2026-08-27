@@ -18,6 +18,7 @@ import (
 	"github.com/sam0uly/spin/internal/theme"
 )
 
+// printHooks prints the template's hooks to stdout for --print-hooks.
 func printHooks(tpl *template.Template) {
 	if tpl.SpinToml == nil {
 		return
@@ -52,6 +53,8 @@ func printHooks(tpl *template.Template) {
 	}
 }
 
+// printResolvedParams prints template metadata and resolved values
+// as JSON for --print-params.
 func printResolvedParams(tpl *template.Template, values map[string]any) error {
 	meta := map[string]any{
 		"name": tpl.Name,
@@ -70,11 +73,10 @@ func printResolvedParams(tpl *template.Template, values map[string]any) error {
 	return enc.Encode(out)
 }
 
-// dryRunRender renders to a temp dir and lists the file paths
-// the project WOULD contain. No files are written to the dest.
+// dryRunRender renders to memory, prints the file list that would be
+// written, and writes nothing.
 func dryRunRender(ctx context.Context, tpl *template.Template, values map[string]any, dest string) error {
-	printCommands := true
-	opts := template.HookOptions{NoHooks: true, PrintCommands: printCommands}
+	opts := template.HookOptions{NoHooks: true, PrintCommands: true}
 	if len(tpl.SpinToml.Pre) > 0 {
 		log.Debug("dry run: pre-hooks (skipped)")
 		if err := template.RunPreHook(ctx, tpl, values, dest, opts); err != nil {
@@ -112,7 +114,7 @@ func promptInvalidPinned(name, localPath string, detectErr error) (bool, error) 
 	)
 	if err := form.Run(); err != nil {
 		if errors.Is(err, huh.ErrUserAborted) {
-			return true, nil // implicit "keep"
+			return true, nil // abort means keep; never delete user data on cancel
 		}
 		return false, err
 	}
@@ -178,8 +180,7 @@ func promptPinAfterSuccess(ctx context.Context, _ string, tpl *template.Template
 		),
 	)
 	if err := form.Run(); err != nil {
-		// User cancelled or huh failed; non-fatal, just skip.
-		return
+		return // prompt failure is non-fatal; skip pinning
 	}
 	if !pin {
 		return

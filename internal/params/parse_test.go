@@ -50,10 +50,7 @@ func TestParse_Textarea(t *testing.T) {
 	}
 }
 
-// TestParse_Number verifies number bounds (min/max) are preserved
-// on the NumberParam. These bounds are enforced at form-time by
-// the huh Validate hook, so if the parser drops them the bound
-// check silently fails.
+// TestParse_Number verifies number bounds (min/max) are preserved on the NumberParam.
 func TestParse_Number(t *testing.T) {
 	min, max := 0, 100
 	specs := SpecMap{
@@ -78,9 +75,7 @@ func TestParse_Number(t *testing.T) {
 	}
 }
 
-// TestParse_Select verifies select options are preserved in order.
-// Order matters: huh.NewSelect renders options in declaration order,
-// so re-ordering here changes the UI.
+// TestParse_Select verifies select options are preserved in order. Order matters: huh.
 func TestParse_Select(t *testing.T) {
 	specs := SpecMap{
 		"edition": {Type: TypeSelect, Options: []string{"a", "b", "c"}, Default: "a"},
@@ -102,9 +97,7 @@ func TestParse_Select(t *testing.T) {
 	}
 }
 
-// TestParse_MultiSelect verifies multi-select default selection
-// (a single option by default; multiple supported). Order in the
-// default is preserved.
+// TestParse_MultiSelect verifies multi-select default selection (a single option by default; multiple supported).
 func TestParse_MultiSelect(t *testing.T) {
 	specs := SpecMap{
 		"features": {Type: TypeMultiSelect, Options: []string{"a", "b"}, Default: []string{"a"}},
@@ -122,9 +115,7 @@ func TestParse_MultiSelect(t *testing.T) {
 	}
 }
 
-// TestParse_Bool verifies bool default is preserved. The TOML
-// parser passes true/false through unchanged, but the params
-// parser coerces via asBool; this test guards the coercion.
+// TestParse_Bool verifies bool default is preserved.
 func TestParse_Bool(t *testing.T) {
 	specs := SpecMap{
 		"verbose": {Type: TypeBool, Default: true},
@@ -161,10 +152,7 @@ func TestParse_Path(t *testing.T) {
 	}
 }
 
-// TestParse_Secret verifies a secret param has no default (the
-// only way to be useful: secrets must not have a placeholder value
-// leaked into the prompt). The test asserts the parser accepts
-// `{type: "secret"}` with no Default key.
+// TestParse_Secret verifies secret params parse without a default.
 func TestParse_Secret(t *testing.T) {
 	specs := SpecMap{
 		"api_key": {Type: TypeSecret},
@@ -182,10 +170,7 @@ func TestParse_Secret(t *testing.T) {
 	}
 }
 
-// TestParse_UnknownType verifies the parser returns
-// ErrUnknownType for an unrecognised type string. The runner
-// depends on this signal to surface a clear error to the user
-// (instead of silently defaulting to text).
+// TestParse_UnknownType verifies the parser returns ErrUnknownType for an unrecognised type string.
 func TestParse_UnknownType(t *testing.T) {
 	specs := SpecMap{
 		"weird": {Type: Type("madeup")},
@@ -206,11 +191,7 @@ func TestParse_UnknownType(t *testing.T) {
 	}
 }
 
-// TestParse_Shorthand verifies the shorthand form (no inline
-// table, just a string value) produces a *TextParam with the
-// string as the default. This is the legacy v1 form used by
-// older templates: `project_name = "myapp"` is equivalent to
-// `project_name = { type = "text", default = "myapp" }`.
+// TestParse_Shorthand verifies the shorthand form (no inline table, just a string value) produces a *TextParam.
 func TestParse_Shorthand(t *testing.T) {
 	// The shorthand is detected at the TOML layer (parseTOML in
 	// internal/template); for parse_test, we hand-craft the
@@ -231,9 +212,7 @@ func TestParse_Shorthand(t *testing.T) {
 	}
 }
 
-// TestSetDefaults verifies SetDefaults applies each param's
-// Default() to its Value() -- the path used by --no-interactive
-// mode to skip the huh form.
+// TestSetDefaults verifies SetDefaults applies each param's default, the non-interactive path.
 func TestSetDefaults(t *testing.T) {
 	specs := SpecMap{
 		"name":  {Type: TypeText, Default: "myapp"},
@@ -266,9 +245,7 @@ func TestSetDefaults(t *testing.T) {
 	}
 }
 
-// TestSetDefaults_PreservesOrder is a smoke test that SetDefaults
-// does not re-order the param slice (some --no-interactive
-// pipelines rely on the original order to drive CLI flag binding).
+// TestSetDefaults_PreservesOrder is a smoke test that SetDefaults does not re-order the param slice (some.
 func TestSetDefaults_PreservesOrder(t *testing.T) {
 	specs := SpecMap{
 		"a": {Type: TypeText, Default: "A"},

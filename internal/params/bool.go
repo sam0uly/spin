@@ -6,6 +6,7 @@ import (
 	"charm.land/huh/v2"
 )
 
+// BoolParam is a yes/no confirm prompt.
 type BoolParam struct {
 	name   string
 	prompt string

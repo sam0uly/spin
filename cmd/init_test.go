@@ -9,10 +9,7 @@ import (
 	"testing"
 )
 
-// TestInit_CreatesBaseTree verifies `spin init` writes
-// spin.toml, _base/file.txt.tmpl, and README.md into <name>/.
-// The template body should contain the resolved name; the
-// README should link to the spin repo.
+// TestInit_CreatesBaseTree verifies `spin init` writes spin.toml, _base/file.txt.tmpl, and README.md into <name>/.
 func TestInit_CreatesBaseTree(t *testing.T) {
 	dir := t.TempDir()
 	out, exitCode := runSpinWithDir(t, dir, "init", "my-template")
@@ -44,9 +41,7 @@ func TestInit_CreatesBaseTree(t *testing.T) {
 	}
 }
 
-// TestInit_RejectsExistingDir verifies we don't silently
-// overwrite an existing directory. A typo or a stray
-// `spin init template` over real work is a hostile UX.
+// TestInit_RejectsExistingDir verifies we don't silently overwrite an existing directory.
 func TestInit_RejectsExistingDir(t *testing.T) {
 	dir := t.TempDir()
 	// Pre-create the dest dir.
@@ -91,9 +86,7 @@ func TestInit_DirFlag(t *testing.T) {
 	}
 }
 
-// TestInit_RejectsBadName verifies path-separator and dot names
-// are rejected, since they would let the user create templates
-// outside the intended parent.
+// TestInit_RejectsBadName rejects names with path separators or dots.
 func TestInit_RejectsBadName(t *testing.T) {
 	cases := []string{"", ".", "..", "with/slash", "with\\backslash", "x\x00y"}
 	dir := t.TempDir()
@@ -107,10 +100,7 @@ func TestInit_RejectsBadName(t *testing.T) {
 	}
 }
 
-// TestInit_FixtureIsRenderable verifies the produced template
-// can be rendered end-to-end by `spin new`. We render it into
-// a temp dir and check the .tmpl file came out with the project
-// name substituted.
+// TestInit_FixtureIsRenderable verifies the produced template can be rendered end-to-end by `spin new`.
 func TestInit_FixtureIsRenderable(t *testing.T) {
 	dir := t.TempDir()
 	if out, code := runSpinWithDir(t, dir, "init", "rt"); code != 0 {
@@ -171,9 +161,7 @@ func TestInit_HelpText(t *testing.T) {
 	}
 }
 
-// runSpinWithDir runs the spin binary in the given working
-// directory. Used by init tests so we can isolate the
-// destination from the test process's CWD.
+// runSpinWithDir runs the spin binary in the given working directory.
 func runSpinWithDir(t *testing.T, dir string, args ...string) ([]byte, int) {
 	t.Helper()
 	isolateConfig(t)

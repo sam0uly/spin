@@ -34,9 +34,7 @@ func testTemplateWithBase(t *testing.T, files map[string]string) *Template {
 	}
 }
 
-// TestRender_GeneratesLicense verifies the core built-in licensing
-// path: a known license value plus a copyright holder produce a
-// LICENSE file with the year and holder substituted.
+// TestRender_GeneratesLicense verifies the core built-in licensing path: a known license value plus a copyright.
 func TestRender_GeneratesLicense(t *testing.T) {
 	tpl := testTemplateWithBase(t, map[string]string{"main.txt": "hello"})
 	out, err := tpl.Render(map[string]any{

@@ -102,52 +102,32 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// refreshOne re-clones or re-copies the cache for a single pin,
-// with rollback: the old on-disk cache is moved aside before the
-// refresh runs; on failure, the old cache is moved back into
-// place. The returned Pinned has the new Version; the caller is
-// expected to persist it via client.Pin.
-//
-// Returns a non-nil error if EITHER the refresh OR the pin write
-// failed. The error is the LAST thing that failed; the rollback
-// itself is best-effort and reported as a warning, since by then
-// we've done everything we can.
+// refreshOne refreshes one pin's cache with rollback: the old cache
+// is renamed aside first, moved back on failure, and deleted on
+// success. The returned pin carries the new Version; persist it with
+// client.Pin. A failed rollback is reported as a warning, not returned,
+// since the original error is the actionable one.
 func refreshOne(ctx context.Context, client *registry.Client, p registry.Pinned) (registry.Pinned, error) {
 	if p.LocalPath == "" {
 		return p, fmt.Errorf("no LocalPath on pin; re-run `spin add %s`", p.Source)
 	}
-	// (1) Snapshot the old cache to a sibling .bak-<ts> dir so we
-	// can move it back on failure. We use a rename (atomic on the
-	// same filesystem) instead of a copy, because the cache is
-	// potentially hundreds of MB and we don't need a second copy.
+	// Snapshot the old cache via rename (atomic on one filesystem,
+	// and no second copy of a potentially huge cache). If the cache
+	// is missing there is nothing to roll back to; Refresh rejects
+	// that case itself. A cross-filesystem rename failure is recorded
+	// but does not stop the update attempt.
 	backup, haveBackup := backupPath(p.LocalPath)
 	var backupErr error
-	// Only snapshot if the cache dir actually exists. Refresh's
-	// own stat check rejects a missing cache with a "re-run
-	// `spin add`" error, so we don't need a snapshot to roll
-	// back to.
 	if _, err := os.Stat(p.LocalPath); err == nil {
 		if err := os.Rename(p.LocalPath, backup); err != nil {
-			// Rename can fail across filesystems. If so, copy
-			// then remove (slower, but correct). We don't bail
-			// out -- the user would still want the update
-			// attempted, with the old cache left in place as the
-			// safety net.
 			backupErr = err
 		} else {
 			haveBackup = true
 		}
 	}
 
-	// (2) Run the refresh. Refresh does its own clone/copy onto
-	// the original LocalPath; on success we delete the .bak and
-	// return the new pin. On failure, we attempt to move .bak
-	// back into place.
 	updated, err := client.Refresh(ctx, p)
 	if err != nil {
-		// Roll back if we can. A failed rollback is reported but
-		// not returned, since the original error is the one the
-		// user needs to act on.
 		if haveBackup {
 			if rbErr := os.Rename(backup, p.LocalPath); rbErr != nil {
 				printWarn("rollback also failed for %s: original=%v rollback=%v (backup at %s)",
@@ -160,13 +140,9 @@ func refreshOne(ctx context.Context, client *registry.Client, p registry.Pinned)
 		return p, err
 	}
 
-	// (3) Success: persist the updated pin. We do this LAST so a
-	// write failure doesn't strand the user with a refreshed
-	// cache but an outdated Version.
+	// Persist last so a pin-write failure cannot leave a refreshed
+	// cache behind an outdated Version; roll the cache back instead.
 	if err := client.Pin(ctx, updated); err != nil {
-		// Cache is already refreshed; pin write failed. Roll back
-		// the cache so the recorded Version matches what's on
-		// disk.
 		if haveBackup {
 			if rbErr := os.Rename(backup, p.LocalPath); rbErr != nil {
 				printWarn("pin write failed for %s AND rollback failed: pin-err=%v rollback-err=%v (backup at %s)",
@@ -176,7 +152,7 @@ func refreshOne(ctx context.Context, client *registry.Client, p registry.Pinned)
 		return p, fmt.Errorf("pin write failed: %v", err)
 	}
 
-	// (4) All green. Delete the .bak.
+	// All green: drop the snapshot.
 	if haveBackup {
 		if rmErr := os.RemoveAll(backup); rmErr != nil {
 			log.Debug("failed to remove update backup", "path", backup, "err", rmErr)
@@ -185,10 +161,9 @@ func refreshOne(ctx context.Context, client *registry.Client, p registry.Pinned)
 	return updated, nil
 }
 
-// backupPath returns the path to use for the on-disk rollback
-// snapshot: LocalPath + ".bak-<unix-ts>". A timestamp keeps
-// repeated updates from clobbering each other's backups (e.g. if
-// a user runs `spin update` twice in a second).
+// backupPath returns the rollback snapshot path for localPath:
+// the original plus a ".bak-<unix-ts>" suffix so back-to-back updates
+// never clobber each other's snapshots.
 func backupPath(localPath string) (string, bool) {
 	if localPath == "" {
 		return "", false

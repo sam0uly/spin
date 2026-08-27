@@ -12,9 +12,7 @@ import (
 	srcspec "github.com/sam0uly/spin/internal/spec"
 )
 
-// TestLoader_Load_LocalPath verifies Load with a local dir
-// returns a non-nil *Template with the correct BaseDir. This is
-// the happy path for `spin new <name> --template /path/to/tpl`.
+// TestLoader_Load_LocalPath verifies Load with a local dir returns a non-nil *Template with the correct BaseDir.
 func TestLoader_Load_LocalPath(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "spin.toml"), []byte("name = \"tpl\"\n"), 0o644); err != nil {
@@ -40,11 +38,7 @@ func TestLoader_Load_LocalPath(t *testing.T) {
 	}
 }
 
-// TestLoader_Load_LocalPath_MissingSpinToml verifies Load fails
-// (with a clear "spin.toml not found" error) when the local dir
-// has no spin.toml. The error message is part of the v2.0
-// contract -- if it changes, the CLI's user-facing error
-// degrades silently.
+// TestLoader_Load_LocalPath_MissingSpinToml verifies Load fails (with a clear "spin.
 func TestLoader_Load_LocalPath_MissingSpinToml(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(dir, "_base"), 0o755); err != nil {
@@ -61,10 +55,7 @@ func TestLoader_Load_LocalPath_MissingSpinToml(t *testing.T) {
 	}
 }
 
-// TestLoader_Load_LocalPath_MissingBase verifies Load fails when
-// the local dir has spin.toml but no _base/ directory. The
-// _base/ tree is the source of files-to-render; without it, the
-// template produces nothing, so we fail fast.
+// TestLoader_Load_LocalPath_MissingBase verifies Load fails when the local dir has spin.toml but no _base/ directory.
 func TestLoader_Load_LocalPath_MissingBase(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "spin.toml"), []byte("name = \"tpl\"\n"), 0o644); err != nil {
@@ -123,10 +114,7 @@ func TestLoader_IsGitURL(t *testing.T) {
 	}
 }
 
-// TestRender_PathTraversal verifies that rendering a template
-// with a key like "../escape.txt" is rejected by writeFiles.
-// This is the v2.0 security guard against malicious templates
-// escaping the destination dir.
+// TestRender_PathTraversal verifies that rendering a template with a key like "../escape.
 func TestRender_PathTraversal(t *testing.T) {
 	// Build a path-traversal file map by hand and call
 	// WriteFiles directly. We don't need a real Template for
@@ -144,11 +132,7 @@ func TestRender_PathTraversal(t *testing.T) {
 	}
 }
 
-// TestRender_DeletesSpinToml verifies that RenderToWithPost
-// removes spin.toml from the destination dir as the last step.
-// TPL-16: "spin.toml is deleted from the output after a
-// successful render". The deletion is a defensive walk in case
-// the template's _base/ accidentally includes a spin.toml.
+// TestRender_DeletesSpinToml verifies that RenderToWithPost removes spin.
 func TestRender_DeletesSpinToml(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "spin.toml"), []byte("name = \"tpl\"\n"), 0o644); err != nil {
@@ -189,10 +173,7 @@ func TestRender_DeletesSpinToml(t *testing.T) {
 	}
 }
 
-// TestRunPostHook_RunsShellCommand verifies RunPostHook executes
-// the [[post]] hook command via `sh -c` in the given dir, with
-// the supplied values available as template variables. The hook
-// runs AFTER files are written and BEFORE spin.toml deletion.
+// TestRunPostHook_RunsShellCommand verifies post-hook commands run via sh -c with templated values.
 func TestRunPostHook_RunsShellCommand(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "spin.toml"), []byte("name = \"tpl\"\n[[post]]\nrun = \"echo {{.name}} > post-out.txt && touch post-ran.txt\"\n"), 0o644); err != nil {
@@ -223,14 +204,7 @@ func TestRunPostHook_RunsShellCommand(t *testing.T) {
 	}
 }
 
-// TestLoader_Load_GitURL_Mock verifies Load dispatches to the
-// git-clone branch for git URLs. We can't actually clone (no
-// network in tests, and a fake host hangs on DNS), so we
-// exercise only the dispatcher: the URL must not be treated as
-// a local path (isLocalPath returns false) and must be
-// recognised as a git URL (isGitURL returns true). The actual
-// cloneGit failure mode is covered by the integration
-// verification in the plan (it requires a real git server).
+// TestLoader_Load_GitURL_Mock verifies Load dispatches to the git-clone branch for git URLs.
 func TestLoader_Load_GitURL_Mock(t *testing.T) {
 	spec := "https://github.com/foo/bar.git"
 	if srcspec.IsLocalPath(spec) {
@@ -241,9 +215,7 @@ func TestLoader_Load_GitURL_Mock(t *testing.T) {
 	}
 }
 
-// TestRunPostHook_MultiStepOrder verifies that two [[post]] steps
-// both run, in the order they appear in spin.toml, and the second
-// observes side-effects from the first.
+// TestRunPostHook_MultiStepOrder verifies that two [[post]] steps both run, in the order they appear in spin.
 func TestRunPostHook_MultiStepOrder(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "spin.toml"), []byte(`name = "tpl"
@@ -300,9 +272,7 @@ func TestCompareSemver(t *testing.T) {
 	}
 }
 
-// TestLoader_Load_ShorthandUsesPinned verifies that loadShorthand
-// checks pinned templates before cloning. When the resolved source
-// is already pinned, the cached template is used.
+// TestLoader_Load_ShorthandUsesPinned verifies that loadShorthand checks pinned templates before cloning.
 func TestLoader_Load_ShorthandUsesPinned(t *testing.T) {
 	xdg := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", xdg)
@@ -351,7 +321,7 @@ func TestLoader_Load_ShorthandUsesPinned(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Load via shorthand — should find the pin and use Detect, not clone.
+	// Load via shorthand: should find the pin and use Detect, not clone.
 	l := NewLoader(filepath.Join(xdg, "spin", "templates"))
 	tpl, err := l.LoadContext(ctx, "test/test-tpl")
 	if err != nil {
@@ -368,10 +338,7 @@ func TestLoader_Load_ShorthandUsesPinned(t *testing.T) {
 	}
 }
 
-// TestLoader_Load_ShorthandPinNotFound verifies that when the
-// resolved source is NOT pinned, loadShorthand falls through to
-// cloneGit and fails with a git error (no actual clone attempted
-// because the URL is fake).
+// TestLoader_Load_ShorthandPinNotFound verifies that when the resolved source is NOT pinned, loadShorthand falls.
 func TestLoader_Load_ShorthandPinNotFound(t *testing.T) {
 	xdg := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", xdg)
@@ -408,9 +375,7 @@ func TestLoader_Load_ShorthandPinNotFound(t *testing.T) {
 	}
 }
 
-// TestLoader_Load_ShorthandPinStaleLocalPath verifies that when
-// a pin exists but its LocalPath is stale (template deleted), the
-// loader falls through to cloneGit instead of returning a stale template.
+// TestLoader_Load_ShorthandPinStaleLocalPath verifies that when a pin exists but its LocalPath is stale (template.
 func TestLoader_Load_ShorthandPinStaleLocalPath(t *testing.T) {
 	xdg := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", xdg)
@@ -494,7 +459,7 @@ func TestLoader_Load_ShorthandPinMismatchSource(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Pin a DIFFERENT source — should not be reused.
+	// Pin a DIFFERENT source: it must not be reused.
 	client := registry.New()
 	if err := client.Pin(ctx, registry.Pinned{
 		Name:      "other",

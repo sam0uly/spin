@@ -14,22 +14,20 @@ import (
 	srcspec "github.com/sam0uly/spin/internal/spec"
 )
 
-// Client is the local pin store. It owns ~/.config/spin/pinned.json
-// and the per-template caches under ~/.config/spin/templates/. The
-// v2.x registry layer (manager.go) owns a separate registries store
-// at ~/.config/spin/registries.json plus per-registry clones under
-// ~/.config/spin/registries/<alias>/.
+// Client owns the local pin store: pinned.json plus the per-template
+// caches under CacheDir/templates.
 type Client struct {
-	CacheDir string // where Pinned entries are stored; defaults to ~/.config/spin/pinned.json
+	CacheDir string // defaults to ~/.config/spin
 }
 
+// New returns a Client rooted at the default config dir.
 func New() *Client {
 	return &Client{CacheDir: defaultConfigDir()}
 }
 
-// Add resolves a spec (local path or git URL) into a Pinned
-// template. The clone/copy runs before the Pinned record is
-// returned, so the caller writes pinned.json only on success.
+// Add resolves a spec (local path or git URL) into a Pinned record.
+// The clone or copy happens before the record is returned, so callers
+// can safely persist it only on success.
 func (c *Client) Add(ctx context.Context, spec string) (*Pinned, error) {
 	if spec == "" {
 		return nil, fmt.Errorf("empty spec")
@@ -51,9 +49,8 @@ func (c *Client) Add(ctx context.Context, spec string) (*Pinned, error) {
 	return pinned, nil
 }
 
-// validateTemplateDir checks that dir contains spin.toml and _base/.
-// Used by addLocal and addGit to reject non-template directories
-// at pin time rather than deferring the error to `spin new`.
+// validateTemplateDir reports whether dir looks like a template:
+// it must contain spin.toml and _base/.
 func validateTemplateDir(dir string) error {
 	if _, err := os.Stat(filepath.Join(dir, "spin.toml")); err != nil {
 		return fmt.Errorf("spin.toml not found in %s", dir)
@@ -72,9 +69,7 @@ func (c *Client) addLocal(ctx context.Context, spec string) (*Pinned, error) {
 	if err != nil {
 		return nil, fmt.Errorf("add local: %w", err)
 	}
-	// Resolve to absolute so the symlink target survives when
-	// followed from any directory (the cache lives under
-	// ~/.config/spin/templates/, not the user's cwd).
+	// Resolve to absolute so the symlink target works from any cwd.
 	src, err = filepath.Abs(src)
 	if err != nil {
 		return nil, fmt.Errorf("add local: %w", err)
@@ -95,15 +90,13 @@ func (c *Client) addLocal(ctx context.Context, spec string) (*Pinned, error) {
 	}
 	dest := filepath.Join(templatesDir, filepath.Base(src))
 
-	// Remove any previous pin of this name so the symlink/copy is
-	// fresh. (Pin-de-dupe is a separate concern, handled in Pin().)
+	// Drop any previous pin cache of this name.
 	if err := os.RemoveAll(dest); err != nil {
 		return nil, fmt.Errorf("clear dest: %w", err)
 	}
 
-	// Try symlink first (cheap, no copy). On Windows without
-	// SeCreateSymbolicLinkPrivilege, or on filesystems that don't
-	// support symlinks, fall back to a recursive copy.
+	// Symlink when possible; fall back to a recursive copy on
+	// filesystems without symlink support (e.g. Windows).
 	if err := os.Symlink(src, dest); err != nil {
 		if copyErr := copyDir(src, dest); copyErr != nil {
 			return nil, fmt.Errorf("symlink (%v) and copy (%w) both failed", err, copyErr)
@@ -129,13 +122,11 @@ func (c *Client) addGit(ctx context.Context, spec string) (*Pinned, error) {
 	}
 	dest := filepath.Join(templatesDir, SanitiseRepoName(spec))
 
-	// Remove any previous clone.
+	// Drop any previous clone.
 	if err := os.RemoveAll(dest); err != nil {
 		return nil, fmt.Errorf("clear dest: %w", err)
 	}
 
-	// Shallow clone, no terminal prompts. GIT_TERMINAL_PROMPT=0 keeps
-	// a missing credential from blocking on a password prompt.
 	if err := GitClone(ctx, spec, dest); err != nil {
 		return nil, err
 	}
@@ -144,9 +135,8 @@ func (c *Client) addGit(ctx context.Context, spec string) (*Pinned, error) {
 		return nil, err
 	}
 
-	// Best-effort: capture the resolved HEAD sha so a refresh can
-	// see if upstream has moved. Not fatal if git is missing or
-	// the clone has no commits.
+	// Best-effort HEAD sha so a later refresh can detect upstream
+	// movement.
 	version := "git"
 	if sha, _ := gitHeadSHA(dest); sha != "" {
 		version = sha
@@ -160,8 +150,8 @@ func (c *Client) addGit(ctx context.Context, spec string) (*Pinned, error) {
 	}, nil
 }
 
-// expandHome returns path with a leading "~" or "~/" expanded to
-// the user's home directory. Pure-Go; no shell.
+// expandHome expands a leading "~" or "~/" to the user's home
+// directory.
 func expandHome(path string) (string, error) {
 	if path == "~" {
 		return os.UserHomeDir()
@@ -238,28 +228,15 @@ func gitHeadSHA(dir string) (string, error) {
 	return s, nil
 }
 
-// CopyTreeForTest is a test-only helper that exposes copyDir
-// outside the package. The leading lowercase `c` would normally
-// stay unexported; cmd/update_test.go uses this to seed the
-// pinned LocalPath with a known-good initial copy. Production
-// code should call (c *Client).Refresh or (c *Client).Add.
+// CopyTreeForTest exposes copyDir to other packages for tests that
+// seed a pin cache with known content.
 func CopyTreeForTest(src, dst string) error { return copyDir(src, dst) }
 
-// SanitiseRepoName extracts the repo basename from a git URL. E.g.
-//
-//	"https://github.com/foo/bar.git"  -> "bar"
-//	"git@github.com:foo/bar.git"      -> "bar"
-//	"github.com/foo/bar"              -> "bar"
-//
-// The result is used as a directory name under the cache dir, so it
-// must be safe across filesystems: lowercase, no scheme, no .git
-// suffix. The function is the single source of truth for this
-// transformation; both this package and internal/template call it
-// to keep cache layout consistent.
+// SanitiseRepoName extracts the repo basename from a git URL, e.g.
+// "https://github.com/foo/bar.git" becomes "bar". The result is used
+// as a directory name under the cache dir.
 func SanitiseRepoName(rawURL string) string {
 	base := rawURL
-	// Drop the scheme / protocol prefix so we can find the last "/"
-	// or ":" separator.
 	for _, prefix := range []string{"https://", "http://", "git://", "ssh://"} {
 		if after, ok := strings.CutPrefix(base, prefix); ok {
 			base = after
@@ -267,8 +244,6 @@ func SanitiseRepoName(rawURL string) string {
 		}
 	}
 	base = strings.TrimPrefix(base, "git@")
-	// For scp-style URLs ("git@host:owner/repo.git") the colon
-	// separates host from path.
 	if i := strings.LastIndexAny(base, "/:"); i >= 0 {
 		base = base[i+1:]
 	}
@@ -276,13 +251,13 @@ func SanitiseRepoName(rawURL string) string {
 	return base
 }
 
-// ─── pinned templates (local state) ───────────────────────────────
-
+// PinnedPath returns the location of pinned.json.
 func (c *Client) PinnedPath() string {
 	return filepath.Join(c.CacheDir, "pinned.json")
 }
 
-// Returns every persisted Pinned entry, including soft-deleted ones.
+// ListAllPinned returns every persisted pin, including soft-deleted
+// ones. A missing pinned.json yields a nil slice, not an error.
 func (c *Client) ListAllPinned(ctx context.Context) ([]Pinned, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -304,6 +279,7 @@ func (c *Client) ListAllPinned(ctx context.Context) ([]Pinned, error) {
 	return out, nil
 }
 
+// ListPinned returns every pin that has not been soft-deleted.
 func (c *Client) ListPinned(ctx context.Context) ([]Pinned, error) {
 	all, err := c.ListAllPinned(ctx)
 	if err != nil {
@@ -318,6 +294,8 @@ func (c *Client) ListPinned(ctx context.Context) ([]Pinned, error) {
 	return out, nil
 }
 
+// Pin adds p to pinned.json, replacing an existing pin of the same
+// name.
 func (c *Client) Pin(ctx context.Context, p Pinned) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -325,7 +303,7 @@ func (c *Client) Pin(ctx context.Context, p Pinned) error {
 	if err := os.MkdirAll(c.CacheDir, 0o755); err != nil {
 		return err
 	}
-	// Default LocalPath for older callers that pre-date the field.
+	// Older pins may pre-date the LocalPath field.
 	if p.LocalPath == "" {
 		p.LocalPath = filepath.Join(c.CacheDir, "templates", p.Name)
 	}
@@ -343,6 +321,8 @@ func (c *Client) Pin(ctx context.Context, p Pinned) error {
 	return c.writePinned(all)
 }
 
+// Unpin soft-deletes the named pin. Its cache stays on disk until
+// Purge removes it. Unpinning an unknown name is not an error.
 func (c *Client) Unpin(ctx context.Context, name string) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -364,6 +344,8 @@ func (c *Client) Unpin(ctx context.Context, name string) error {
 	return c.writePinned(all)
 }
 
+// Purge deletes the named pin, its record, and its on-disk cache.
+// It fails when no pin with that name exists.
 func (c *Client) Purge(ctx context.Context, name string) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -394,16 +376,12 @@ func (c *Client) Purge(ctx context.Context, name string) error {
 	return c.writePinned(out)
 }
 
-// Refresh re-clones (or re-copies) the on-disk cache for a pinned
-// template in place, then updates the pin record's Version with the
-// newly resolved HEAD SHA (or "local" for local-path sources). The
-// LocalPath is preserved so any code that referenced it by path
-// still works. If the pin has gone missing on disk, the user is
-// told to run `spin add` again rather than getting a half-built
-// clone back.
-//
-// `pin` is passed by value so callers can decide whether to keep
-// the returned record (call Pin with it) or just inspect it.
+// Refresh rebuilds the on-disk cache for a pin in place and updates
+// its Version with the resolved HEAD sha (or "local" for local-path
+// sources). The pin is passed by value; the caller decides whether
+// to persist the returned record via Pin. A missing LocalPath is
+// treated as a fresh clone, since cmd/update moves it aside to a
+// .bak snapshot before calling Refresh.
 func (c *Client) Refresh(ctx context.Context, pin Pinned) (Pinned, error) {
 	if err := ctx.Err(); err != nil {
 		return Pinned{}, err
@@ -415,18 +393,10 @@ func (c *Client) Refresh(ctx context.Context, pin Pinned) (Pinned, error) {
 		return Pinned{}, fmt.Errorf("pin %q has no LocalPath; re-run `spin add`", pin.Name)
 	}
 
-	// Branch on source kind. Local paths are re-copied in place
-	// (cheap, no network). Git URLs re-clone on top of the existing
-	// dir -- `git fetch` would also work, but a full re-clone is
-	// simpler and matches the freshness the user expects.
-	//
-	// Note: we do NOT require pin.LocalPath to exist. `cmd.update`
-	// moves it aside to a .bak snapshot for rollback; from Refresh's
-	// point of view a missing LocalPath is just a fresh clone.
 	switch {
 	case srcspec.IsLocalPath(pin.Source):
-		// Re-copy from source. If the source is gone, fail so the
-		// user re-pins rather than keeping a stale copy.
+		// Fail when the source is gone so the user re-pins instead of
+		// keeping a stale copy.
 		if _, err := os.Stat(pin.Source); err != nil {
 			return Pinned{}, fmt.Errorf("source %s is gone: %w", pin.Source, err)
 		}
@@ -457,10 +427,7 @@ func (c *Client) Refresh(ctx context.Context, pin Pinned) (Pinned, error) {
 	return pin, nil
 }
 
-// writePinned writes the pinned list atomically: marshal to JSON,
-// write to a sibling temp file, fsync, then rename over the real
-// file. This prevents a partial write (e.g. process killed) from
-// leaving pinned.json in a corrupt state.
+// writePinned persists the pin list atomically.
 func (c *Client) writePinned(all []Pinned) error {
 	return atomicWriteJSON(c.PinnedPath(), all, ".pinned-*.json.tmp")
 }

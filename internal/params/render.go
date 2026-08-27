@@ -12,16 +12,12 @@ import (
 	"golang.org/x/text/language"
 )
 
-// FuncMap returns the set of template functions available to both
-// file rendering (template.Render) and prompt/default rendering
-// (renderStr). A template author can therefore use the same helpers
-// (snake_case, kebab, quote, ...) in a param's prompt or default as
-// they would in a .tmpl file. This is the single source of truth for
-// those helpers; template/engine.go delegates to it.
+// FuncMap returns the template helpers available to file rendering
+// and to param prompts/defaults alike, so authors can use the same
+// functions in both places.
 func FuncMap() template.FuncMap {
 	titleCaser := cases.Title(language.English)
 	return template.FuncMap{
-		// Useful in templates
 		"upper": strings.ToUpper,
 		"lower": strings.ToLower,
 		"title": titleCaser.String,
@@ -33,39 +29,24 @@ func FuncMap() template.FuncMap {
 			}
 			return v
 		},
-		// snake_case: "MyProject" -> "my_project".
-		// Splits on case boundaries and word boundaries, joins
-		// with underscores, lowercases.
 		"snake_case": SnakeCase,
-		// kebab-case: "MyProject" -> "my-project". Go's text/template
-		// requires function names to be valid identifiers, so we use
-		// `kebab` (called as `{{ kebab "X" }}`).
 		"kebab": func(s string) string {
 			return strings.ReplaceAll(SnakeCase(s), "_", "-")
 		},
-		// quote: shell-escapes s for use inside a `[[post]] run = "..."`.
-		// Uses single-quote wrapping with the standard "'='"'" trick
-		// so embedded single quotes are escaped correctly.
 		"quote": ShellQuote,
-		// now: current time, formatted. No-arg -> RFC3339. With a
-		// layout string (e.g. "2006") -> that layout.
+		// now formats the current time; an empty layout means RFC3339.
 		"now": func(layout string) string {
 			if layout == "" {
 				layout = time.RFC3339
 			}
 			return time.Now().UTC().Format(layout)
 		},
-		// contains: substring check. Useful in templates that want
-		// to gate on a value (e.g. `{{ if contains .tags "rust" }}`).
 		"contains": strings.Contains,
-		// has: report whether a []string contains a value. Used by
-		// [[include]] rules and conditional templates.
+		// has reports list membership; not_has and one_of are variants.
 		"has": slices.Contains[[]string, string],
-		// not_has: inverse of has.
 		"not_has": func(list []string, item string) bool {
 			return !slices.Contains(list, item)
 		},
-		// one_of: report whether a value equals any of the given strings.
 		"one_of": func(v string, items ...string) bool {
 			return slices.Contains(items, v)
 		},
@@ -75,11 +56,12 @@ func FuncMap() template.FuncMap {
 var nonWordSplitter = regexp.MustCompile(`[^a-zA-Z0-9]+`)
 
 // SnakeCase converts a PascalCase/camelCase identifier to snake_case.
+// SnakeCase converts a PascalCase or camelCase identifier to
+// snake_case, splitting on case and non-alphanumeric boundaries.
 func SnakeCase(s string) string {
 	if s == "" {
 		return ""
 	}
-	// Insert an underscore at every case boundary: "MyProject" -> "My_Project".
 	var b strings.Builder
 	runes := []rune(s)
 	for i, r := range runes {
@@ -103,12 +85,9 @@ func ShellQuote(s string) string {
 	return "'" + strings.ReplaceAll(s, "'", `'"'"'`) + "'"
 }
 
-// renderStr renders s as a Go text/template against values, returning
-// s unchanged when it contains no template directives or fails to
-// parse/execute. This lets param prompts and defaults reference the
-// available values, e.g. `prompt = "Name for {{ .name }}"` or
-// `default = "{{ .name }}"`. The safe fallthrough means malformed or
-// non-templated strings never break scaffolding.
+// renderStr renders s as a Go template against values. Strings with
+// no directives, or that fail to parse or execute, are returned
+// unchanged so malformed prompts never break scaffolding.
 func renderStr(s string, values map[string]any) string {
 	if s == "" || !strings.Contains(s, "{{") {
 		return s

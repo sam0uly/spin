@@ -269,9 +269,8 @@ func TestPinnedSearchEntries_EmptyQuery(t *testing.T) {
 	}
 }
 
-// TestPinnedSearchEntries_SourceDedup verifies the deduplication
-// logic in runSearch — but that's in the caller. This only
-// verifies pinnedSearchEntries returns the right data.
+// TestPinnedSearchEntries_SourceDedup covers pinned-entry metadata; the
+// dedup itself happens in runSearch.
 func TestPinnedSearchEntries_ReturnsMetadata(t *testing.T) {
 	dir := t.TempDir()
 	client := &registry.Client{CacheDir: dir}

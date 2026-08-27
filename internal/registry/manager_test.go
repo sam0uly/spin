@@ -19,9 +19,7 @@ func newTestManager(t *testing.T) Manager {
 	return Manager{CacheDir: dir}
 }
 
-// writeRegistryFixture creates a minimal valid registry dir at
-// root/registry.toml + root/templates/<id>.toml. Used to seed
-// `spin registry add <path>` happy-path tests.
+// writeRegistryFixture creates a minimal valid registry dir at root/registry.toml + root/templates/<id>.toml.
 func writeRegistryFixture(t *testing.T, root string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Join(root, "templates"), 0o755); err != nil {
@@ -404,9 +402,7 @@ func TestManager_AddLocalNonDirectoryErrors(t *testing.T) {
 	}
 }
 
-// withFixtureOfficialURL points DefaultRegistryURL at a local registry
-// fixture for the duration of the test, so Bootstrap never touches the
-// network. It returns the fixture path.
+// withFixtureOfficialURL points DefaultRegistryURL at a local registry fixture for the duration of the test, so.
 func withFixtureOfficialURL(t *testing.T) string {
 	t.Helper()
 	src := t.TempDir()

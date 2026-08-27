@@ -5,10 +5,7 @@ import (
 	"testing"
 )
 
-// TestDefaultInvalidPinnedPrompt_AlwaysKeeps pins the contract: the
-// fallback for "this clone looks bad, what do you want to do?"
-// always returns (true, nil) so non-interactive runs preserve
-// user data instead of silently deleting it.
+// TestDefaultInvalidPinnedPrompt_AlwaysKeeps pins the contract: the fallback for "this clone looks bad, what do.
 func TestDefaultInvalidPinnedPrompt_AlwaysKeeps(t *testing.T) {
 	keep, err := defaultInvalidPinnedPrompt("any-name", "/any/path", errors.New("any error"))
 	if err != nil {
@@ -19,10 +16,7 @@ func TestDefaultInvalidPinnedPrompt_AlwaysKeeps(t *testing.T) {
 	}
 }
 
-// TestDefaultExistingDestPrompt_ReturnsWipe pins the contract: the
-// fallback for "dest already exists, what do you want to do?"
-// always returns DestWipe, so piped invocations of `spin new` and
-// CI runs do not suddenly start prompting.
+// TestDefaultExistingDestPrompt_ReturnsWipe pins the contract: the fallback for "dest already exists, what do you.
 func TestDefaultExistingDestPrompt_ReturnsWipe(t *testing.T) {
 	got, err := defaultExistingDestPrompt("any-name", "/any/path")
 	if err != nil {

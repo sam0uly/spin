@@ -7,21 +7,11 @@ import (
 	"text/template"
 )
 
-// RunPostHook executes the template's [[post]] steps (if any) after
-// the files have been written to disk. Each step's `run` is rendered
-// against the resolved param + flag values (so `{{.project_name}}`
-// interpolates correctly), then run via `sh -c` in dir. Steps run
-// in order; the hook stops on the first failure and returns that
-// error (with the failing command and its combined output).
-//
-// An empty or missing post section is a no-op.
-//
-// The post-hook runs AFTER files are written, BEFORE the spin.toml
-// is removed from the output directory. This ordering lets the hook
-// observe the full scaffolded state (including any spin.toml that
-// might have been included in _base/) but ensures the project that
-// the user sees has spin.toml deleted by the time the scaffolder
-// returns.
+// RunPostHook executes the template's [[post]] steps plus any scripts
+// in _post/, in that order, after files are written but before
+// spin.toml is removed from the output. Each command is rendered
+// against the resolved values and run via sh -c in dir. The first
+// failure stops the hook. A missing post section is a no-op.
 func RunPostHook(ctx context.Context, t *Template, values map[string]any, dir string, opts HookOptions) error {
 	if t == nil || t.SpinToml == nil {
 		return nil
@@ -43,10 +33,9 @@ func RunPostHook(ctx context.Context, t *Template, values map[string]any, dir st
 	return runHooks(ctx, "post", steps, values, dir, opts)
 }
 
-// renderHook parses the post-hook command as a text/template and
-// executes it against the resolved values. We deliberately use a
-// fresh FuncMap (no template helpers like `title`/`upper`) so the
-// post-hook is a thin shell wrapper, not a full templating pass.
+// renderHook renders a hook command as a text/template against the
+// resolved values. Deliberately no helper funcs: hooks are thin shell
+// wrappers, not full templating passes.
 func renderHook(cmd string, values map[string]any) (string, error) {
 	t, err := template.New("post").Parse(cmd)
 	if err != nil {

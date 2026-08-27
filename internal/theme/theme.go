@@ -1,3 +1,5 @@
+// Package theme defines the spin color palette and style sets shared
+// by prompts, TUIs, and CLI help output.
 package theme
 
 import (
@@ -49,6 +51,7 @@ var (
 	BoundaryChar = "/"
 )
 
+// Theme returns the huh styles used by every interactive form.
 func Theme() *huh.Styles {
 	t := huh.ThemeBase(isDark)
 	border := ld(orangeSoft, warmGrayTone)
@@ -99,6 +102,8 @@ func Theme() *huh.Styles {
 	return t
 }
 
+// SpinnerTheme returns the spinner styles; the dark flag is unused
+// because colors adapt through LightDark.
 func SpinnerTheme(_ bool) *huhspinner.Styles {
 	return &huhspinner.Styles{
 		Spinner: lipgloss.NewStyle().Foreground(Accent),
@@ -106,12 +111,15 @@ func SpinnerTheme(_ bool) *huhspinner.Styles {
 	}
 }
 
+// NewForm wraps a huh form with the spin theme.
 func NewForm(groups ...*huh.Group) *huh.Form {
 	return huh.NewForm(groups...).WithTheme(huh.ThemeFunc(func(_ bool) *huh.Styles {
 		return Theme()
 	}))
 }
 
+// FangColorScheme returns the color scheme for fang-rendered help
+// output, resolved against fld for light/dark terminals.
 func FangColorScheme(fld lipgloss.LightDarkFunc) fang.ColorScheme {
 	return fang.ColorScheme{
 		Base:           fld(warmGrayDark, warmGraySuperLight),
@@ -133,6 +141,7 @@ func FangColorScheme(fld lipgloss.LightDarkFunc) fang.ColorScheme {
 	}
 }
 
+// ListStyles returns the bubbles list chrome styles.
 func ListStyles() list.Styles {
 	s := list.DefaultStyles(isDark)
 	s.Title = lipgloss.NewStyle().
@@ -144,6 +153,7 @@ func ListStyles() list.Styles {
 	return s
 }
 
+// ListItemStyles returns the bubbles list item styles.
 func ListItemStyles() list.DefaultItemStyles {
 	s := list.NewDefaultItemStyles(isDark)
 	s.NormalTitle = lipgloss.NewStyle().Foreground(text).Padding(0, 0, 0, 2)

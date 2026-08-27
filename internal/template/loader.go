@@ -14,17 +14,18 @@ import (
 	"github.com/sam0uly/spin/internal/version"
 )
 
-// Loader fetches a template from a local path, a git URL, or a name
-// in ~/.config/spin/pinned.json, and returns it ready to render.
+// Loader fetches a template from a local path, git URL, registry
+// shorthand, or pinned name, and returns it ready to render.
 type Loader struct {
-	CacheDir string // where to store cloned templates; defaults to ~/.config/spin/templates
+	CacheDir string // clone destination; defaults to ~/.config/spin/templates
+
 	// PromptInvalidPinned is called when a template exists on disk but
-	// fails validation. It returns true to keep the clone, false to
-	// remove it, or a non-nil error to surface directly. A nil hook
-	// keeps the clone (used by non-interactive runs and tests).
+	// fails validation. Return true to keep the clone, false to remove
+	// it. A nil hook keeps the clone.
 	PromptInvalidPinned func(name, localPath string, detectErr error) (bool, error)
-	// PromptExistingDest is called when cloneGit finds dest already
-	// exists. A nil hook wipes and re-clones, which suits scripts/CI.
+
+	// PromptExistingDest is called when cloneGit finds the destination
+	// already populated. A nil hook wipes and re-clones.
 	PromptExistingDest func(name, localPath string) (DestAction, error)
 }
 
@@ -39,6 +40,8 @@ func defaultExistingDestPrompt(_, _ string) (DestAction, error) {
 	return DestWipe, nil
 }
 
+// NewLoader returns a Loader using cacheDir, or the default cache dir
+// when empty.
 func NewLoader(cacheDir string) *Loader {
 	if cacheDir == "" {
 		cacheDir = defaultCacheDir()
@@ -46,16 +49,14 @@ func NewLoader(cacheDir string) *Loader {
 	return &Loader{CacheDir: cacheDir}
 }
 
-// Load fetches a template by source spec using a background context.
-// Prefer LoadContext when a cancellable context is available.
+// Load calls LoadContext with a background context.
 func (l *Loader) Load(spec string) (*Template, error) {
 	return l.LoadContext(context.Background(), spec)
 }
 
-// LoadContext fetches a template by source spec. The spec can be a
-// local path, a git URL, a `<alias>/<id>` registry shorthand, or a
-// pinned name from ~/.config/spin/pinned.json. ctx bounds any git
-// clone the loader performs.
+// LoadContext fetches a template by spec: a local path, git URL,
+// `<alias>/<id>` registry shorthand, or pinned name. The context
+// bounds any git clone performed.
 func (l *Loader) LoadContext(ctx context.Context, spec string) (*Template, error) {
 	var t *Template
 	var err error
@@ -81,13 +82,11 @@ func (l *Loader) LoadContext(ctx context.Context, spec string) (*Template, error
 	return t, nil
 }
 
-// loadShorthand resolves `<alias>/<id>` against the registry manager,
-// then routes the resolved source through the git-URL or local-path
-// path. The original spec is preserved on the returned Template so
-// the post-scaffold pin prompt offers to re-pin the shorthand.
-//
-// If the resolved source is already pinned locally, the cached
-// template is used instead of re-cloning.
+// loadShorthand resolves `<alias>/<id>` via the registry manager and
+// routes the resolved source through the normal git/local paths. The
+// shorthand itself is kept as Template.Spec so pin prompts can offer
+// it back. A resolved source that is already pinned locally reuses
+// the cached copy instead of re-cloning.
 func (l *Loader) loadShorthand(ctx context.Context, spec string) (*Template, error) {
 	mgr := registry.NewManager()
 	resolved, err := mgr.ResolveShorthand(ctx, spec)
@@ -95,7 +94,7 @@ func (l *Loader) loadShorthand(ctx context.Context, spec string) (*Template, err
 		return nil, err
 	}
 
-	// Check if the resolved source is already pinned.
+	// Reuse an existing pin of the same source instead of re-cloning.
 	if srcspec.IsGitURL(resolved.Source) {
 		client := registry.New()
 		if pinned, err := client.ListPinned(ctx); err == nil {
@@ -132,9 +131,8 @@ func (l *Loader) loadShorthand(ctx context.Context, spec string) (*Template, err
 	return tpl, nil
 }
 
-// loadPinned looks up spec in the registry's pinned.json. Returns
-// (nil, nil) when the spec is not pinned -- that's not an error, it
-// just means the loader should fall through to the next source kind.
+// loadPinned looks up spec in pinned.json. It returns (nil, nil) when
+// the name is not pinned; that is a fall-through, not an error.
 func (l *Loader) loadPinned(ctx context.Context, spec string) (*Template, error) {
 	client := registry.New()
 	pinned, err := client.ListPinned(ctx)
@@ -148,10 +146,8 @@ func (l *Loader) loadPinned(ctx context.Context, spec string) (*Template, error)
 			}
 			t, err := Detect(p.LocalPath)
 			if err != nil {
-				// The pinned clone exists but is malformed (no
-				// spin.toml, no _base/, etc). Ask the user whether
-				// to keep it (in case they want to fix it manually)
-				// or remove it (clean up the bad clone).
+				// The clone is malformed; let the user decide whether to
+				// keep it for manual repair or drop it.
 				prompt := l.PromptInvalidPinned
 				if prompt == nil {
 					prompt = defaultInvalidPinnedPrompt
@@ -172,9 +168,8 @@ func (l *Loader) loadPinned(ctx context.Context, spec string) (*Template, error)
 	return nil, nil
 }
 
-// checkMinSpinVersion returns an error when the template requires a
-// newer spin version than the running binary. Blocks scaffolding
-// because the template may rely on features this spin lacks.
+// checkMinSpinVersion rejects templates whose spin.toml requires a
+// newer spin than the running binary.
 func (l *Loader) checkMinSpinVersion(t *Template) error {
 	if t.SpinToml == nil || t.SpinToml.MinSpinVersion == "" {
 		return nil
@@ -189,8 +184,6 @@ func (l *Loader) cloneGit(ctx context.Context, url string) (*Template, error) {
 	name := registry.SanitiseRepoName(url)
 	dest := filepath.Join(l.CacheDir, name)
 
-	// Something already at dest (a prior clone or stale files): ask
-	// before touching it instead of always wiping.
 	if l.destExists(dest) {
 		prompt := l.PromptExistingDest
 		if prompt == nil {
@@ -217,9 +210,6 @@ func (l *Loader) cloneGit(ctx context.Context, url string) (*Template, error) {
 		}
 	}
 
-	// Shallow clone, no terminal prompts. GIT_TERMINAL_PROMPT=0 keeps
-	// a missing credential from blocking on a password prompt; the
-	// context bounds a slow or hanging remote.
 	if err := registry.GitClone(ctx, url, dest); err != nil {
 		return nil, err
 	}
@@ -247,10 +237,9 @@ const (
 	DestCancel                   // abort without changes
 )
 
-// detectOrPromptInvalid runs Detect(dest). On failure it asks the
-// user via PromptInvalidPinned whether to keep the (now-malformed)
-// clone or remove it. Centralises the malformed-clone handling so
-// the fresh-clone path and the reuse-existing path share it.
+// detectOrPromptInvalid runs Detect(dest), routing malformed clones
+// through PromptInvalidPinned so both the fresh-clone and reuse paths
+// share the handling.
 func (l *Loader) detectOrPromptInvalid(name, dest string) (*Template, error) {
 	t, err := Detect(dest)
 	if err == nil {
@@ -273,9 +262,8 @@ func (l *Loader) detectOrPromptInvalid(name, dest string) (*Template, error) {
 	return nil, fmt.Errorf("%q at %s: %w", name, dest, err)
 }
 
-// Lister returns the basenames of all top-level entries in the
-// loader's cache directory. Used by tests to assert cache behaviour
-// without exposing the cache dir directly.
+// Lister returns the basenames of all top-level entries in the cache
+// directory.
 func (l *Loader) Lister() ([]string, error) {
 	entries, err := os.ReadDir(l.CacheDir)
 	if err != nil {
@@ -291,9 +279,8 @@ func (l *Loader) Lister() ([]string, error) {
 	return out, nil
 }
 
-// Clear removes the cached clone of the given ref (the sanitised
-// directory name produced by SanitiseRepoName). Used by tests to
-// keep the cache clean between runs. No-op if the ref is not cached.
+// Clear removes the cached clone named ref (the sanitised repo name).
+// Removing an uncached ref is a no-op.
 func (l *Loader) Clear(ref string) error {
 	dest := filepath.Join(l.CacheDir, ref)
 	if _, err := os.Stat(dest); err != nil {
@@ -305,10 +292,9 @@ func (l *Loader) Clear(ref string) error {
 	return os.RemoveAll(dest)
 }
 
-// compareSemver returns -1, 0, 1 like strings.Compare but on
-// semver components. "0.2.0" > "0.1.0"; "1.0" == "1.0.0" (missing
-// components are treated as 0). Non-numeric segments are treated as
-// 0 so the comparison degrades gracefully on malformed input.
+// compareSemver compares dotted numeric versions component by
+// component. Missing components count as zero, so "1.0" equals
+// "1.0.0". Malformed segments also count as zero.
 func compareSemver(a, b string) int {
 	as := strings.Split(a, ".")
 	bs := strings.Split(b, ".")
@@ -332,9 +318,6 @@ func compareSemver(a, b string) int {
 }
 
 func defaultCacheDir() string {
-	// XDG-style: prefer os.UserConfigDir() (respects XDG_CONFIG_HOME
-	// on Linux, ~/Library/Application Support on macOS, %AppData% on
-	// Windows). Fall back to $HOME/.config/spin/templates on error.
 	if base, err := os.UserConfigDir(); err == nil && base != "" {
 		return filepath.Join(base, "spin", "templates")
 	}

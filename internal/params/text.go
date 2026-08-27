@@ -6,6 +6,8 @@ import (
 	"charm.land/huh/v2"
 )
 
+// TextParam is a single-line text input with an optional default shown
+// as placeholder.
 type TextParam struct {
 	name   string
 	prompt string

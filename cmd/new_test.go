@@ -78,10 +78,7 @@ func TestNew_TooManyArgsRejected(t *testing.T) {
 	}
 }
 
-// TestNew_SinglePositionalTemplateSpec covers `spin new <template>`
-// where the lone positional arg is a local path. It should be treated
-// as the template, not the project name, so non-interactive mode errors
-// on the missing name (not on a missing template picker).
+// TestNew_SinglePositionalTemplateSpec covers `spin new <template>` where the lone positional arg is a local path.
 func TestNew_SinglePositionalTemplateSpec(t *testing.T) {
 	tplParent := t.TempDir()
 	initOut, initExit := runSpinWithDir(t, tplParent, "init", "go-cli")
@@ -99,9 +96,7 @@ func TestNew_SinglePositionalTemplateSpec(t *testing.T) {
 	}
 }
 
-// a pipe (ModeNamedPipe, not ModeCharDevice) so isInteractive()
-// returns false. runSpinExit inherits the test runner's TTY and
-// would trigger the huh form.
+// a pipe (ModeNamedPipe, not ModeCharDevice) so isInteractive() returns false.
 func runSpinClosedStdin(t *testing.T, args ...string) ([]byte, int) {
 	t.Helper()
 	isolateConfig(t)

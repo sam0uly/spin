@@ -8,40 +8,25 @@ import (
 	"github.com/sam0uly/spin/internal/params"
 )
 
-// BuildForm constructs a huh.Form from the template's spin.toml params.
-// The user fills the form; the resolved values are written back into
-// the supplied map.
+// BuildForm constructs a huh.Form from the template's params and
+// pre-fills it with any values already supplied.
 func (t *Template) BuildForm(values map[string]any) (*huh.Form, error) {
 	ps, err := params.Parse(t.SpinToml.Params)
 	if err != nil {
 		return nil, err
 	}
-	// Pre-fill with the supplied values, so the user sees existing defaults
-	// (e.g. when re-running with --no-interactive).
 	for _, p := range ps {
 		if v, ok := values[p.Name()]; ok {
 			p.Apply(toParamValue(v))
 		}
 	}
-	form := params.Form(ps, values)
-	// After Run, walk the params and copy their Values into values.
-	// We attach a callback by using huh's Key() -- but huh doesn't have
-	// a generic "post-run" hook. So we expose a separate helper.
-	return form, nil
+	return params.Form(ps, values), nil
 }
 
-// ResolveForm runs the form (or applies defaults in non-interactive
-// mode) and returns the resolved values ready for Render().
-//
-// Returned values are unwrapped to raw Go primitives (string, int,
-// bool, []string) so text/template rendering produces sensible
-// output (e.g. `{{.project_name}}` interpolates as the name, not
-// the params.Value struct dump).
-//
-// Order of operations is significant: defaults are applied first,
-// THEN any caller-supplied values are layered on top. This ensures
-// explicit values from the CLI or pre-apply map win over the
-// template's own defaults.
+// ResolveForm resolves param values for rendering: defaults first,
+// then an interactive form or caller-supplied overrides on top. The
+// result is unwrapped to raw Go primitives so text/template output is
+// sensible, plus any caller-supplied keys that are not params.
 func (t *Template) ResolveForm(values map[string]any, interactive bool) (map[string]any, error) {
 	ps, err := params.Parse(t.SpinToml.Params)
 	if err != nil {
@@ -54,27 +39,21 @@ func (t *Template) ResolveForm(values map[string]any, interactive bool) (map[str
 			return nil, err
 		}
 	}
-	// Apply caller-supplied values AFTER defaults so explicit
-	// overrides win.
+	// Explicit caller values are applied after defaults so they win.
 	for _, p := range ps {
 		if v, ok := values[p.Name()]; ok {
 			p.Apply(toParamValue(v))
 		}
 	}
-	// huh validates select values on submit in interactive mode, but
-	// the non-interactive path (and --param overrides) skip that, so
-	// reject a select value outside its options here.
+	// huh only validates select options on interactive submit, so
+	// check non-interactive paths and --param overrides here too.
 	if err := params.ValidateDefaults(ps); err != nil {
 		return nil, err
 	}
 	out := map[string]any{}
 	for _, p := range ps {
-		// Unwrap params.Value to its underlying primitive so
-		// text/template sees {{.project_name}} as a string, not
-		// the Value struct dump.
 		out[p.Name()] = UnwrapValue(p.Value())
 	}
-	// also copy through any caller-supplied keys that aren't params
 	for k, v := range values {
 		if _, ok := out[k]; !ok {
 			out[k] = v
@@ -87,10 +66,8 @@ func toParamValue(v any) params.Value {
 	return params.FromAny(v)
 }
 
-// UnwrapValue returns the underlying primitive held by a
-// params.Value. The text/template engine wants raw Go types
-// (string, int, bool, []string), not the multi-field struct.
-// Exported because post_hook.go also needs it.
+// UnwrapValue returns the primitive a params.Value holds, since
+// text/template wants raw Go types rather than the Value struct.
 func UnwrapValue(v params.Value) any {
 	if v.Kind != "" {
 		switch v.Kind {
@@ -106,7 +83,7 @@ func UnwrapValue(v params.Value) any {
 			return v.String
 		}
 	}
-	// Fallback for Values without Kind (legacy callers).
+	// Fallback for Values without Kind.
 	switch {
 	case v.List != nil:
 		return v.List
@@ -122,8 +99,7 @@ func UnwrapValue(v params.Value) any {
 	return ""
 }
 
-// Hints returns a one-line-per-param summary, used by
-// `spin new <template> --print-params` and the template README.
+// Hints returns a one-line-per-param summary used by --print-params.
 func (t *Template) Hints() []string {
 	out := []string{}
 	for name, spec := range t.SpinToml.Params {

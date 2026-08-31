@@ -3,7 +3,7 @@ module github.com/sam0uly/spin
 go 1.26
 
 require (
-	charm.land/bubbles/v2 v2.2.0
+	charm.land/bubbles/v2 v2.2.1
 	charm.land/bubbletea/v2 v2.0.9
 	charm.land/fang/v2 v2.0.1
 	charm.land/huh/v2 v2.0.3

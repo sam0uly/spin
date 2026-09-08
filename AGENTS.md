@@ -8,17 +8,17 @@
 
 ### Commands
 
-| Command | Purpose |
-|---|---|
-| `spin new [<name>] [<template>]` | Scaffold a project from a template |
-| `spin add <spec>` | Pin a template locally for offline use |
-| `spin list` | Show pinned templates |
-| `spin update [name]` | Refresh a pinned template's cache |
-| `spin remove <name>` | Remove a pin (`--purge` to delete cache) |
-| `spin search <query>` | Search registered local registries |
-| `spin registry ...` | Add / list / update / remove local registries |
-| `spin init <name>` | Scaffold a new template directory |
-| `spin version` | Print the version |
+| Command                          | Purpose                                       |
+| -------------------------------- | --------------------------------------------- |
+| `spin new [<name>] [<template>]` | Scaffold a project from a template            |
+| `spin add <spec>`                | Pin a template locally for offline use        |
+| `spin list`                      | Show pinned templates                         |
+| `spin update [name]`             | Refresh a pinned template's cache             |
+| `spin remove <name>`             | Remove a pin (`--purge` to delete cache)      |
+| `spin search <query>`            | Search registered local registries            |
+| `spin registry ...`              | Add / list / update / remove local registries |
+| `spin init <name>`               | Scaffold a new template directory             |
+| `spin version`                   | Print the version                             |
 
 ### Template specs
 
@@ -40,14 +40,14 @@
 
 ## Technology Stack
 
-| Layer | Choice |
-|---|---|
-| Language | Go 1.26 |
-| CLI framework | Cobra + Fang (styled help/version) |
-| Interactive prompts | Huh v2 |
-| Terminal styling | Lip Gloss v2 |
-| TOML parsing | BurntSushi/toml |
-| Template engine | Go `text/template` |
+| Layer               | Choice                             |
+| ------------------- | ---------------------------------- |
+| Language            | Go 1.27                            |
+| CLI framework       | Cobra + Fang (styled help/version) |
+| Interactive prompts | Huh v2                             |
+| Terminal styling    | Lip Gloss v2                       |
+| TOML parsing        | BurntSushi/toml                    |
+| Template engine     | Go `text/template`                 |
 
 ## Development
 

@@ -8,10 +8,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sam0uly/spin/internal/log"
-	"github.com/sam0uly/spin/internal/registry"
-	srcspec "github.com/sam0uly/spin/internal/spec"
-	"github.com/sam0uly/spin/internal/version"
+	"samouly.fun/spin/internal/log"
+	"samouly.fun/spin/internal/registry"
+	srcspec "samouly.fun/spin/internal/spec"
+	"samouly.fun/spin/internal/version"
 )
 
 // Loader fetches a template from a local path, git URL, registry

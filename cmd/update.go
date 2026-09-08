@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/sam0uly/spin/internal/log"
-	"github.com/sam0uly/spin/internal/registry"
+	"samouly.fun/spin/internal/log"
+	"samouly.fun/spin/internal/registry"
 )
 
 var updateCmd = &cobra.Command{

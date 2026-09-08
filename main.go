@@ -12,9 +12,9 @@ import (
 
 	"charm.land/fang/v2"
 
-	"github.com/sam0uly/spin/cmd"
-	"github.com/sam0uly/spin/internal/theme"
-	"github.com/sam0uly/spin/internal/version"
+	"samouly.fun/spin/cmd"
+	"samouly.fun/spin/internal/theme"
+	"samouly.fun/spin/internal/version"
 )
 
 func main() {

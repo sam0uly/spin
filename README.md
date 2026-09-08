@@ -15,7 +15,7 @@ spin new myapp https://github.com/user/spin-template.git
 ## Install
 
 ```bash
-go install github.com/sam0uly/spin@latest
+go install samouly.fun/spin@latest
 curl -sSfL https://spincli.pages.dev/install.sh | sh
 ```
 
@@ -25,7 +25,7 @@ Single static binary. Needs git on $PATH.
 
 The documentation: [Spin docs](https://spin.samouly.fun)
 
-Go pkg: https://pkg.go.dev/github.com/sam0uly/spin (just have the readme so its not for learning)
+Go pkg: https://pkg.go.dev/samouly.fun/spin (just have the readme so its not for learning)
 
 ## Commands
 

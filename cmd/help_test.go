@@ -13,7 +13,7 @@ import (
 
 	"charm.land/fang/v2"
 
-	"github.com/sam0uly/spin/internal/version"
+	"samouly.fun/spin/internal/version"
 )
 
 var (

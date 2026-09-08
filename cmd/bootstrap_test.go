@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sam0uly/spin/internal/registry"
+	"samouly.fun/spin/internal/registry"
 )
 
 // writeMiniRegistry creates a minimal valid registry at root (registry.toml + templates/<id>.

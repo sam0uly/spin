@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/sam0uly/spin/internal/log"
-	"github.com/sam0uly/spin/internal/registry"
+	"samouly.fun/spin/internal/log"
+	"samouly.fun/spin/internal/registry"
 )
 
 // maybeBootstrapOfficial registers the official registry on first run

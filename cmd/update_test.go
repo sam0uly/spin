@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sam0uly/spin/internal/registry"
+	"samouly.fun/spin/internal/registry"
 )
 
 // makeFixtureLocalSource creates a small on-disk "template" that can be used as a local-path pin source.

@@ -12,10 +12,10 @@ import (
 
 	"charm.land/huh/v2"
 
-	"github.com/sam0uly/spin/internal/log"
-	"github.com/sam0uly/spin/internal/registry"
-	"github.com/sam0uly/spin/internal/template"
-	"github.com/sam0uly/spin/internal/theme"
+	"samouly.fun/spin/internal/log"
+	"samouly.fun/spin/internal/registry"
+	"samouly.fun/spin/internal/template"
+	"samouly.fun/spin/internal/theme"
 )
 
 // printHooks prints the template's hooks to stdout for --print-hooks.

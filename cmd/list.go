@@ -9,8 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/sam0uly/spin/internal/registry"
-	"github.com/sam0uly/spin/internal/template"
+	"samouly.fun/spin/internal/registry"
+	"samouly.fun/spin/internal/template"
 )
 
 var listCmd = &cobra.Command{

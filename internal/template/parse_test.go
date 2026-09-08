@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sam0uly/spin/internal/licenses"
-	"github.com/sam0uly/spin/internal/params"
+	"samouly.fun/spin/internal/licenses"
+	"samouly.fun/spin/internal/params"
 )
 
 // TestParseTOML_AllFields verifies the full spin.

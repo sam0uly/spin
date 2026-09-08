@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sam0uly/spin/internal/licenses"
-	"github.com/sam0uly/spin/internal/params"
-	"github.com/sam0uly/spin/internal/template"
+	"samouly.fun/spin/internal/licenses"
+	"samouly.fun/spin/internal/params"
+	"samouly.fun/spin/internal/template"
 )
 
 // tplWithParams builds an in-memory *template.Template with the given params pre-loaded.

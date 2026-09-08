@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sam0uly/spin/internal/registry"
+	"samouly.fun/spin/internal/registry"
 )
 
 // withEmptyPinned sets XDG_CONFIG_HOME to a temp dir for the duration of the test, so the registry client.

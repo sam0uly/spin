@@ -17,7 +17,7 @@ tasks:
   build:
     desc: Build the spin binary
     cmds:
-      - go build -ldflags "-X github.com/sam0uly/spin/internal/version.Version={{.VERSION}}" -o {{.BIN}} .
+      - go build -ldflags "-X samouly.fun/spin/internal/version.Version={{.VERSION}}" -o {{.BIN}} .
 
   test:
     desc: Run unit and integration tests

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/sam0uly/spin/internal/params"
+	"samouly.fun/spin/internal/params"
 )
 
 // TestTemplate_RenderToWithPost_DeletesSpinToml verifies that RenderToWithPost removes spin.

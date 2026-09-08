@@ -10,7 +10,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	srcspec "github.com/sam0uly/spin/internal/spec"
+	srcspec "samouly.fun/spin/internal/spec"
 )
 
 // ErrUnresolved is returned when a `<alias>/<id>` shorthand cannot

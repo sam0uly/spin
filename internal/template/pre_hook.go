@@ -10,8 +10,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/sam0uly/spin/internal/log"
-	"github.com/sam0uly/spin/internal/params"
+	"samouly.fun/spin/internal/log"
+	"samouly.fun/spin/internal/params"
 )
 
 // RunPreHook executes the template's [[pre]] steps plus any scripts in

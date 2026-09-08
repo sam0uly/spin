@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/sam0uly/spin/internal/version"
+	"samouly.fun/spin/internal/version"
 )
 
 // rootCmd is the cobra root command for spin.

@@ -10,7 +10,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/sam0uly/spin/internal/template"
+	"samouly.fun/spin/internal/template"
 )
 
 // keyPress builds a tea.KeyPressMsg for a single key.

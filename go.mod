@@ -1,6 +1,6 @@
-module github.com/sam0uly/spin
+module samouly.fun/spin
 
-go 1.26
+go 1.27
 
 require (
 	charm.land/bubbles/v2 v2.2.1

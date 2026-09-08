@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sam0uly/spin/internal/params"
+	"samouly.fun/spin/internal/params"
 )
 
 // TestSnakeCase verifies the snakeCase helper that converts

@@ -10,8 +10,8 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/sam0uly/spin/internal/licenses"
-	"github.com/sam0uly/spin/internal/params"
+	"samouly.fun/spin/internal/licenses"
+	"samouly.fun/spin/internal/params"
 )
 
 // Template is a loaded external template, ready to render.

@@ -5,7 +5,7 @@ import (
 
 	"charm.land/huh/v2"
 
-	"github.com/sam0uly/spin/internal/params"
+	"samouly.fun/spin/internal/params"
 )
 
 // BuildForm constructs a huh.Form from the template's params and

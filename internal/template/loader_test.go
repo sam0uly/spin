@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sam0uly/spin/internal/registry"
-	srcspec "github.com/sam0uly/spin/internal/spec"
+	"samouly.fun/spin/internal/registry"
+	srcspec "samouly.fun/spin/internal/spec"
 )
 
 // TestLoader_Load_LocalPath verifies Load with a local dir returns a non-nil *Template with the correct BaseDir.

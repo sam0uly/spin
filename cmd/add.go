@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/sam0uly/spin/internal/registry"
+	"samouly.fun/spin/internal/registry"
 )
 
 var addCmd = &cobra.Command{

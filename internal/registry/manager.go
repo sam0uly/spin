@@ -12,8 +12,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"github.com/sam0uly/spin/internal/log"
-	srcspec "github.com/sam0uly/spin/internal/spec"
+	"samouly.fun/spin/internal/log"
+	srcspec "samouly.fun/spin/internal/spec"
 )
 
 // ErrAliasInvalid is returned when an alias fails ValidateAlias.

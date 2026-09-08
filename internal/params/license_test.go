@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sam0uly/spin/internal/licenses"
+	"samouly.fun/spin/internal/licenses"
 )
 
 func TestParse_LicenseParam(t *testing.T) {

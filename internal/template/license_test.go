@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sam0uly/spin/internal/params"
+	"samouly.fun/spin/internal/params"
 )
 
 func testTemplateWithBase(t *testing.T, files map[string]string) *Template {

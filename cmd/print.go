@@ -11,8 +11,8 @@ import (
 	"charm.land/lipgloss/v2/table"
 	"golang.org/x/term"
 
-	"github.com/sam0uly/spin/internal/log"
-	"github.com/sam0uly/spin/internal/theme"
+	"samouly.fun/spin/internal/log"
+	"samouly.fun/spin/internal/theme"
 )
 
 var (

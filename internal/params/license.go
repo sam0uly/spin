@@ -3,7 +3,7 @@ package params
 import (
 	"fmt"
 
-	"github.com/sam0uly/spin/internal/licenses"
+	"samouly.fun/spin/internal/licenses"
 )
 
 // LicenseParam is a select over the built-in license list. Declaring

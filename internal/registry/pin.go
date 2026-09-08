@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	srcspec "github.com/sam0uly/spin/internal/spec"
+	srcspec "samouly.fun/spin/internal/spec"
 )
 
 // Client owns the local pin store: pinned.json plus the per-template

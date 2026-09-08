@@ -12,9 +12,9 @@ import (
 	"charm.land/huh/v2"
 	"charm.land/lipgloss/v2"
 
-	"github.com/sam0uly/spin/internal/params"
-	"github.com/sam0uly/spin/internal/template"
-	"github.com/sam0uly/spin/internal/theme"
+	"samouly.fun/spin/internal/params"
+	"samouly.fun/spin/internal/template"
+	"samouly.fun/spin/internal/theme"
 )
 
 type tuiStyles struct {

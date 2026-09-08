@@ -3,7 +3,7 @@ package template
 import (
 	"testing"
 
-	"github.com/sam0uly/spin/internal/params"
+	"samouly.fun/spin/internal/params"
 )
 
 // TestResolveForm_BuiltinsSeededAndCopiedThrough checks values seeded into ResolveForm flow back out.

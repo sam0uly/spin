@@ -5,8 +5,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"github.com/sam0uly/spin/internal/licenses"
-	"github.com/sam0uly/spin/internal/params"
+	"samouly.fun/spin/internal/licenses"
+	"samouly.fun/spin/internal/params"
 )
 
 // rawSpinToml is the intermediate decode target for spin.toml. Params

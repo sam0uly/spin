@@ -2,7 +2,7 @@
 
 [![Go Version](https://img.shields.io/github/go-mod/go-version/sam0uly/spin?style=flat-square&color=ff5a1f&labelColor=1c1b19)](https://go.dev/)
 [![Go Report Card](https://img.shields.io/badge/go%20report-A%2B-ff5a1f?style=flat-square&labelColor=1c1b19)](https://goreportcard.com/report/github.com/sam0uly/spin)
-[![Go Reference](https://img.shields.io/badge/pkg.go.dev-reference-ff7a45?style=flat-square&labelColor=1c1b19)](https://pkg.go.dev/github.com/sam0uly/spin)
+[![Go Reference](https://img.shields.io/badge/pkg.go.dev-reference-ff7a45?style=flat-square&labelColor=1c1b19)](https://pkg.go.dev/samouly.fun/spin)
 [![License](https://img.shields.io/github/license/sam0uly/spin?style=flat-square&color=e84a0a&labelColor=1c1b19)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/sam0uly/spin?include_prereleases&style=flat-square&color=ff5a1f&labelColor=1c1b19&label=release)](https://github.com/sam0uly/spin/releases)
 

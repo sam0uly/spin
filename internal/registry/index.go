@@ -1,11 +1,12 @@
 package registry
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -64,8 +65,8 @@ func (m Manager) Build(ctx context.Context) (*Index, map[string]int, error) {
 			})
 		}
 	}
-	sort.Slice(idx.entries, func(i, j int) bool {
-		return idx.entries[i].Alias+"/"+idx.entries[i].ID < idx.entries[j].Alias+"/"+idx.entries[j].ID
+	slices.SortFunc(idx.entries, func(a, b TemplateEntry) int {
+		return strings.Compare(a.Alias+"/"+a.ID, b.Alias+"/"+b.ID)
 	})
 	return idx, skipCounts, nil
 }
@@ -94,16 +95,16 @@ func (idx *Index) Search(query string, limit int) []TemplateEntry {
 		}
 		scored = append(scored, scoredEntry{entry: e, score: s})
 	}
-	sort.SliceStable(scored, func(i, j int) bool {
-		if scored[i].score != scored[j].score {
-			return scored[i].score > scored[j].score
+	slices.SortStableFunc(scored, func(a, b scoredEntry) int {
+		if a.score != b.score {
+			return cmp.Compare(b.score, a.score)
 		}
 		// Tie-break deterministically so equal-scored results keep a
 		// stable order across runs.
-		if scored[i].entry.ID != scored[j].entry.ID {
-			return scored[i].entry.ID < scored[j].entry.ID
+		if a.entry.ID != b.entry.ID {
+			return strings.Compare(a.entry.ID, b.entry.ID)
 		}
-		return scored[i].entry.Alias < scored[j].entry.Alias
+		return strings.Compare(a.entry.Alias, b.entry.Alias)
 	})
 	out := make([]TemplateEntry, 0, len(scored))
 	for _, s := range scored {

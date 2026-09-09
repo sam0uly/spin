@@ -2,7 +2,7 @@ package params
 
 import (
 	"reflect"
-	"sort"
+	"slices"
 	"testing"
 )
 
@@ -263,8 +263,8 @@ func TestSetDefaults_PreservesOrder(t *testing.T) {
 		t.Errorf("order changed: %v → %v", names, got)
 	}
 	// And the values are independent -- sort by name and check.
-	sort.Strings(names)
-	sort.Strings(got)
+	slices.Sort(names)
+	slices.Sort(got)
 	if !reflect.DeepEqual(names, got) {
 		t.Errorf("names mismatch: %v vs %v", names, got)
 	}

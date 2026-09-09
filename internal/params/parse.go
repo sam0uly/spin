@@ -1,8 +1,9 @@
 package params
 
 import (
+	"cmp"
 	"fmt"
-	"sort"
+	"slices"
 )
 
 // SpecMap is a raw spin.toml `params` block: param name → Spec.
@@ -19,8 +20,8 @@ func Parse(specs SpecMap) ([]Param, error) {
 		}
 		out = append(out, p)
 	}
-	sort.Slice(out, func(i, j int) bool {
-		return out[i].Name() < out[j].Name()
+	slices.SortFunc(out, func(a, b Param) int {
+		return cmp.Compare(a.Name(), b.Name())
 	})
 	return out, nil
 }

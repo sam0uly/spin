@@ -3,7 +3,7 @@ package template
 import (
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 )
 
@@ -60,7 +60,7 @@ func hookFiles(dir, phase string) []HookView {
 		}
 		paths = append(paths, filepath.Join(dir, e.Name()))
 	}
-	sort.Strings(paths)
+	slices.Sort(paths)
 	out := make([]HookView, 0, len(paths))
 	for _, p := range paths {
 		out = append(out, HookView{Phase: phase, File: p, IsFile: true})

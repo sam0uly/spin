@@ -11,7 +11,7 @@ package licenses
 import (
 	"embed"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 )
 
@@ -43,7 +43,7 @@ var ids = []string{
 // Known returns the supported built-in license IDs, sorted.
 func Known() []string {
 	out := append([]string(nil), ids...)
-	sort.Strings(out)
+	slices.Sort(out)
 	return out
 }
 

@@ -10,7 +10,7 @@ require (
 	charm.land/lipgloss/v2 v2.0.6
 	charm.land/log/v2 v2.0.1
 	github.com/BurntSushi/toml v1.6.0
-	github.com/charmbracelet/x/ansi v0.11.8
+	github.com/charmbracelet/x/ansi v0.11.9
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/term v0.46.0
 	golang.org/x/text v0.41.0
